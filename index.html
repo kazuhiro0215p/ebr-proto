@@ -1,0 +1,1116 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="robots" content="noindex,nofollow">
+<meta name="theme-color" content="#1E2A4A">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="EBR端末">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="icon" type="image/png" href="icon-192.png">
+<style>:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0}img{max-width:100%}[hidden]{display:none!important}</style>
+<title>ERP一体型EBR 現場端末</title>
+<style>
+/* Layout: 左に筋書きガイド、中央に端末（スマホ／秤量PC）。スマホ幅では端末が全画面、ガイドは帯から開く */
+:root{
+  --navy:#1E2A4A; --navy2:#2A3A5E; --gold:#C2974A; --gold2:#A87E36;
+  --pale:#F4F6FA; --pale2:#DCE4F2; --cream:#FBF4E6; --ink:#3A4256;
+  --line:#D5DCE8; --mute:#6A7389; --white:#FFFFFF;
+  --ok:#2C7A57; --okbg:#E5F2EB; --ng:#B3261E; --ngbg:#FBEAE8; --warn:#8A5D00; --warnbg:#FFF3D1;
+  --font:Meiryo,"メイリオ","Hiragino Kaku Gothic ProN","Hiragino Sans","Noto Sans JP",sans-serif;
+  color-scheme:light;
+}
+*{box-sizing:border-box}
+html,body{height:100%}
+body{background:var(--pale2);color:var(--ink);font-family:var(--font);font-size:14px;line-height:1.6;margin:0}
+button,input,select,textarea{font-family:inherit;font-size:inherit;color:inherit}
+button{cursor:pointer}
+:focus-visible{outline:3px solid var(--gold);outline-offset:2px}
+.num{font-variant-numeric:tabular-nums}
+
+/* ステージ */
+.stage{min-height:100%;display:grid;grid-template-columns:340px 1fr;gap:32px;padding-block:28px;padding-left:max(24px,env(safe-area-inset-left,0px));padding-right:max(24px,env(safe-area-inset-right,0px));align-items:start;max-width:1320px;margin:0 auto}
+.devwrap{display:flex;justify-content:center;min-width:0}
+
+/* ガイド */
+.guide{background:var(--white);border:1px solid var(--line);border-radius:10px;padding:18px 18px 14px;position:sticky;top:20px;max-height:calc(100vh - 40px);overflow:auto}
+.guide h2{font-size:15px;color:var(--navy);margin:0 0 2px}
+.guide .gsub{font-size:12px;color:var(--mute);margin:0 0 12px}
+.gsteps{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:2px}
+.gstep{border-radius:6px}
+.gstep>button{display:grid;grid-template-columns:22px 1fr auto;gap:8px;align-items:center;width:100%;text-align:left;background:none;border:0;padding:6px 8px;border-radius:6px;color:var(--ink)}
+.gstep>button:hover{background:var(--pale)}
+.gdot{width:18px;height:18px;border-radius:50%;border:2px solid var(--line);display:grid;place-items:center;font-size:11px;color:var(--white)}
+.gstep.done .gdot{background:var(--navy2);border-color:var(--navy2)}
+.gstep.cur{background:var(--cream)}
+.gstep.cur .gdot{border-color:var(--gold);background:var(--gold)}
+.gstep .gl{font-size:13px}
+.gstep .gjump{font-size:11px;color:var(--gold2);white-space:nowrap}
+.gdetail{padding:4px 10px 10px 38px;font-size:12.5px}
+.gdetail p{margin:0 0 6px}
+.gdetail .gtry{background:var(--white);border:1px dashed var(--gold);border-radius:6px;padding:6px 8px;color:var(--ink)}
+.gdetail .gtry b{color:var(--gold2)}
+.gfoot{display:flex;gap:8px;margin-top:12px;border-top:1px solid var(--line);padding-top:10px}
+.gfoot button{font-size:12px;background:none;border:1px solid var(--line);border-radius:6px;padding:4px 10px;color:var(--mute)}
+
+/* 端末 */
+.dev{position:relative;width:390px;height:min(820px,calc(100vh - 56px));min-height:640px;background:var(--pale);border-radius:34px;border:10px solid #121A2E;overflow:hidden;display:flex;flex-direction:column;box-shadow:0 18px 50px rgba(30,42,74,.25)}
+.dev.pc{width:min(960px,100%);height:min(680px,calc(100vh - 56px));border-radius:10px;border:0;border-top:28px solid #2B3245}
+.proto{background:var(--cream);color:var(--gold2);font-size:11.5px;padding:3px 12px;display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid #EBDDBF;flex:none}
+.proto b{letter-spacing:.06em}
+.proto .gbtn{display:none;background:var(--gold);color:var(--white);border:0;border-radius:10px;font-size:11.5px;padding:1px 10px}
+.hdr{background:var(--navy);color:var(--white);display:flex;align-items:center;gap:8px;padding:10px 12px;flex:none;min-height:54px}
+.hdr .back{background:none;border:0;color:var(--white);font-size:20px;line-height:1;padding:4px 6px;border-radius:6px}
+.hdr .back:hover{background:var(--navy2)}
+.hdr .ttl{flex:1;min-width:0}
+.hdr .ttl b{display:block;font-size:15px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.hdr .ttl span{display:block;font-size:11px;color:#B9C3DA}
+.hdr .who{font-size:11px;text-align:right;color:#CFD7E8;line-height:1.35}
+.content{flex:1;overflow:auto;padding:14px 14px 18px;display:flex;flex-direction:column;gap:12px}
+.actions{flex:none;background:var(--white);border-top:1px solid var(--line);padding:10px 14px 12px;display:flex;flex-direction:column;gap:8px}
+.actions .note{font-size:12px;color:var(--mute);text-align:center;margin:0}
+.dev.pc .content{padding:16px 20px}
+.dev.pc .actions{flex-direction:row;justify-content:flex-end}
+
+/* 部品 */
+.card{background:var(--white);border:1px solid var(--line);border-radius:10px;padding:12px 14px}
+.card h3{margin:0 0 8px;font-size:13px;color:var(--navy)}
+.kv{display:grid;grid-template-columns:auto 1fr;gap:3px 12px;font-size:13px;margin:0}
+.kv dt{color:var(--mute)}
+.kv dd{margin:0;min-width:0;overflow-wrap:anywhere}
+.eyebrow{font-size:11px;color:var(--mute);letter-spacing:.05em;margin:0}
+.btn{border:0;border-radius:8px;padding:13px 14px;font-size:15px;font-weight:bold;width:100%;display:flex;align-items:center;justify-content:center;gap:8px}
+.dev.pc .btn{width:auto;min-width:200px}
+.btn.scan{background:var(--navy);color:var(--white)}
+.btn.scan:hover{background:var(--navy2)}
+.btn.issue{background:var(--gold);color:var(--white)}
+.btn.issue:hover{background:var(--gold2)}
+.btn.pri{background:var(--navy2);color:var(--white)}
+.btn.sec{background:var(--white);color:var(--navy);border:1px solid var(--line)}
+.btn:disabled{background:#C9CFDB;color:#F4F6FA;cursor:not-allowed}
+.link{background:none;border:0;color:var(--navy2);text-decoration:underline;padding:0;font-size:12.5px}
+.chip{display:inline-block;font-size:11px;padding:1px 8px;border-radius:10px;background:var(--pale2);color:var(--navy);white-space:nowrap;font-weight:normal}
+.chip.ok{background:var(--okbg);color:var(--ok)}
+.chip.ng{background:var(--ngbg);color:var(--ng)}
+.chip.warn{background:var(--warnbg);color:var(--warn)}
+.chip.gold{background:var(--cream);color:var(--gold2)}
+.chip.navy{background:var(--navy);color:var(--white)}
+.info{font-size:12px;color:var(--mute);background:var(--pale);border-radius:8px;padding:8px 10px;margin:0}
+.flowmark{display:flex;gap:6px;flex-wrap:wrap;font-size:11.5px}
+.fm{display:inline-flex;align-items:center;gap:4px;border-radius:4px;padding:1px 7px}
+.fm.r{background:var(--navy);color:var(--white)}
+.fm.i{background:var(--gold);color:var(--white)}
+
+/* ホーム */
+.tiles{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.tile{background:var(--white);border:1px solid var(--line);border-radius:10px;padding:10px 12px;text-align:left;display:flex;flex-direction:column;gap:4px;min-height:96px}
+.tile .tn{font-size:12px;color:var(--mute)}
+.tile .tt{font-size:14.5px;font-weight:bold;color:var(--navy);line-height:1.35}
+.tile .tm{margin-top:auto;display:flex;gap:4px;flex-wrap:wrap}
+.tile.next{border:2px solid var(--gold);background:var(--cream)}
+.tile.done{background:#F7F9FC}
+.tile.lock{opacity:.6}
+.tile.wide{grid-column:1/-1;min-height:0;flex-direction:row;align-items:center;gap:10px}
+
+/* 一覧 */
+.list{display:flex;flex-direction:column;gap:8px}
+.row{background:var(--white);border:1px solid var(--line);border-radius:10px;padding:10px 12px;display:grid;grid-template-columns:1fr auto;gap:2px 10px;align-items:center;text-align:left;width:100%}
+button.row:hover{border-color:var(--navy2)}
+.row .r1{font-weight:bold;color:var(--navy);font-size:14px}
+.row .r2{font-size:12px;color:var(--mute);grid-column:1}
+.row .rr{grid-row:1/3;grid-column:2;text-align:right}
+.row.dim{opacity:.55}
+.checklist{display:flex;flex-direction:column;gap:6px}
+.ck{display:grid;grid-template-columns:26px 1fr auto;gap:8px;align-items:center;background:var(--white);border:1px solid var(--line);border-radius:8px;padding:8px 10px;font-size:13px}
+.ck .box{width:22px;height:22px;border-radius:50%;border:2px solid var(--line);display:grid;place-items:center;color:var(--white);font-size:12px}
+.ck.on{border-color:#B8D8C7}
+.ck.on .box{background:var(--ok);border-color:var(--ok)}
+.ck .s{font-size:11.5px;color:var(--mute)}
+
+/* 読取ビュー */
+.finder{background:#141B2D;border-radius:10px;height:150px;position:relative;display:grid;place-items:center;color:#9BA6C0;font-size:12px;overflow:hidden;flex:none}
+.finder::before{content:"";position:absolute;width:120px;height:120px;border:2px solid rgba(255,255,255,.75);border-radius:10px}
+.finder::after{content:"";position:absolute;left:calc(50% - 56px);width:112px;height:2px;background:var(--gold);top:30%;animation:sweep 2.2s ease-in-out infinite alternate}
+@keyframes sweep{to{top:68%}}
+@media (prefers-reduced-motion:reduce){.finder::after{animation:none;top:50%}}
+.finder span{position:relative;z-index:1;margin-top:150px}
+
+/* フォーム */
+.fsec{display:flex;flex-direction:column;gap:8px}
+.fsec h3{margin:4px 0 0;font-size:13px;color:var(--navy);display:flex;gap:6px;align-items:center}
+.fld{background:var(--white);border:1px solid var(--line);border-radius:8px;padding:8px 10px;display:grid;grid-template-columns:1fr 128px;gap:2px 10px;align-items:center}
+.fld label{font-size:13px}
+.fld .spec{font-size:11px;color:var(--mute);grid-column:1}
+.fld .in{grid-row:1/3;grid-column:2;display:flex;align-items:center;gap:4px}
+.fld input,.fld select{width:100%;border:1px solid var(--line);border-radius:6px;padding:6px 8px;text-align:right;background:var(--white);min-width:0}
+.fld input[type=text].l{text-align:left}
+.fld .u{font-size:11.5px;color:var(--mute);white-space:nowrap}
+.fld.bad{border-color:var(--ng);background:var(--ngbg)}
+.fld.bad .spec{color:var(--ng)}
+.fld.auto input{background:var(--pale);border-style:dashed}
+.fld.wide{grid-template-columns:1fr}
+.fld.wide .in{grid-row:auto;grid-column:1}
+textarea{width:100%;border:1px solid var(--line);border-radius:6px;padding:8px;min-height:64px;resize:vertical;background:var(--white)}
+.chk{display:flex;gap:8px;align-items:flex-start;background:var(--white);border:1px solid var(--line);border-radius:8px;padding:8px 10px;font-size:13px}
+.chk input{width:18px;height:18px;margin-top:2px;flex:none}
+.alert{border-radius:8px;padding:9px 11px;font-size:12.5px;margin:0}
+.alert.ng{background:var(--ngbg);color:var(--ng);border:1px solid #EFC4BF}
+.alert.ok{background:var(--okbg);color:var(--ok);border:1px solid #BFDCCB}
+.alert.warn{background:var(--warnbg);color:var(--warn);border:1px solid #F0DDA6}
+.stamp{font-size:11px;color:var(--mute)}
+
+/* ラベル */
+.label{background:var(--white);border:1px solid #D9C7A2;border-radius:6px;overflow:hidden;box-shadow:0 2px 0 #EFE6D3}
+.label .lh{background:var(--gold);color:var(--white);font-size:12px;font-weight:bold;padding:4px 10px;display:flex;justify-content:space-between}
+.label .lb{display:grid;grid-template-columns:auto 1fr;gap:12px;padding:10px;align-items:center}
+.label .lb .kv{font-size:12px}
+.issued{text-align:center;display:flex;flex-direction:column;align-items:center;gap:6px;padding:10px 0}
+.issued .big{width:56px;height:56px;border-radius:50%;background:var(--okbg);color:var(--ok);display:grid;place-items:center;font-size:28px}
+.issued b{font-size:16px;color:var(--navy)}
+
+/* 秤量PC */
+.pcgrid{display:grid;grid-template-columns:1.2fr 1fr;gap:16px;min-height:0}
+.tbl{width:100%;border-collapse:collapse;font-size:13px;background:var(--white)}
+.tbl th{background:var(--navy);color:var(--white);font-weight:normal;text-align:left;padding:7px 9px;font-size:12px;white-space:nowrap}
+.tbl td{border-bottom:1px solid var(--line);padding:8px 9px;vertical-align:middle}
+.tbl tr.sel td{background:var(--cream)}
+.phgrid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+.ph{background:var(--white);border:1px solid var(--line);border-radius:8px;overflow:hidden;display:flex;flex-direction:column;min-width:0}
+.phimg{border:0;padding:0;background:var(--pale2);aspect-ratio:1;display:block;width:100%;max-width:100%}
+.phimg img{width:100%;height:100%;object-fit:cover;display:block}
+.phm{padding:5px 6px 6px;display:flex;flex-direction:column;gap:2px;font-size:11px;align-items:flex-start}
+.ph.old{opacity:.5}
+.phempty{border:1px dashed var(--line);border-radius:8px;padding:14px;text-align:center;font-size:12px;color:var(--mute);background:var(--white);margin:0}
+.vh{position:absolute;width:1px;height:1px;opacity:0;overflow:hidden;clip:rect(0 0 0 0)}
+label.btn{cursor:pointer}
+.viewer img{width:100%;border-radius:8px;display:block;background:var(--pale2)}
+.tbl tr.pick{cursor:pointer}
+.tbl td:first-child{white-space:nowrap}
+.tbl tr.pick:hover td{background:var(--pale)}
+.wbtn{background:var(--navy);color:var(--white);border:0;border-radius:6px;padding:6px 12px;font-size:12.5px;font-weight:bold;white-space:nowrap}
+.wbtn:hover{background:var(--navy2)}
+.tblwrap{overflow-x:auto;border:1px solid var(--line);border-radius:8px}
+.scale{background:#0F1626;color:#7CF0B1;border-radius:10px;padding:14px 16px;font-family:Consolas,"Courier New",monospace;text-align:right}
+.scale .sv{font-size:42px;line-height:1.1;font-variant-numeric:tabular-nums}
+.scale .sl{display:flex;justify-content:space-between;font-size:11px;color:#8A96B3;font-family:var(--font)}
+.steps2{display:flex;gap:6px}
+.steps2 span{flex:1;text-align:center;font-size:12px;padding:5px;border-radius:6px;background:var(--pale2);color:var(--mute)}
+.steps2 span.on{background:var(--navy);color:var(--white)}
+.steps2 span.dn{background:var(--okbg);color:var(--ok)}
+
+/* トレース */
+.tree{display:flex;flex-direction:column;gap:0}
+.tnode{background:var(--white);border:1px solid var(--line);border-radius:10px;padding:9px 12px;font-size:12.5px;text-align:left;width:100%;display:flex;flex-direction:column;gap:3px}
+button.tnode:hover{border-color:var(--navy2)}
+.tnode .th{display:flex;justify-content:space-between;gap:8px;align-items:center}
+.tnode .th b{color:var(--navy);font-size:13.5px}
+.tnode.none{opacity:.5;border-style:dashed}
+.tlink{display:flex;align-items:center;gap:6px;padding:4px 0 4px 18px;font-size:11px;color:var(--mute);border-left:2px solid var(--gold);margin-left:18px}
+.tkids{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+.tpair{display:flex;flex-direction:column;gap:0}
+
+/* 監査証跡 */
+.search{display:flex;gap:6px}
+.search input{flex:1;min-width:0;border:1px solid var(--line);border-radius:8px;padding:8px 10px;background:var(--white)}
+.chips{display:flex;gap:6px;flex-wrap:wrap}
+.chips button{border:1px solid var(--line);background:var(--white);border-radius:14px;padding:3px 11px;font-size:12px;color:var(--ink)}
+.chips button.on{background:var(--navy);border-color:var(--navy);color:var(--white)}
+.ev{background:var(--white);border:1px solid var(--line);border-radius:8px;padding:8px 10px;font-size:12.5px;text-align:left;width:100%;display:flex;flex-direction:column;gap:2px}
+.ev .e1{display:flex;justify-content:space-between;gap:8px;color:var(--mute);font-size:11.5px}
+.ev .e2{font-weight:bold;color:var(--navy);display:flex;gap:6px;align-items:center;flex-wrap:wrap}
+.ev .e3{color:var(--ink)}
+.ev .ex{margin-top:6px;border-top:1px dashed var(--line);padding-top:6px}
+.ev.ngv{border-left:4px solid var(--ng)}
+.ev.mod{border-left:4px solid var(--gold)}
+
+/* 記録照会 */
+.rv{display:grid;grid-template-columns:1fr auto auto;gap:6px 10px;align-items:center;background:var(--white);border:1px solid var(--line);border-radius:8px;padding:8px 10px;font-size:13px}
+.rv .rs{font-size:11px;color:var(--mute)}
+.rv .val{font-weight:bold;text-align:right}
+.rv .hist{grid-column:1/-1;font-size:11.5px;color:var(--gold2);background:var(--cream);border-radius:6px;padding:4px 8px}
+
+/* オーバーレイ */
+.ovl{position:absolute;inset:0;background:rgba(18,26,46,.5);display:flex;align-items:flex-end;z-index:20}
+.dev.pc .ovl{align-items:center;justify-content:center}
+.sheet{background:var(--white);width:100%;border-radius:16px 16px 0 0;max-height:86%;display:flex;flex-direction:column}
+.dev.pc .sheet{width:520px;border-radius:12px;max-height:90%}
+.sheet .sh{padding:14px 16px 8px;border-bottom:1px solid var(--line)}
+.sheet .sh b{color:var(--navy);font-size:15px}
+.sheet .sh p{margin:2px 0 0;font-size:11.5px;color:var(--mute)}
+.sheet .sb{overflow:auto;padding:12px 16px;display:flex;flex-direction:column;gap:8px}
+.sheet .sf{padding:10px 16px 14px;border-top:1px solid var(--line);display:flex;gap:8px}
+.sheet .sf .btn{flex:1}
+.cand{display:grid;grid-template-columns:40px 1fr auto;gap:10px;align-items:center;background:var(--white);border:1px solid var(--line);border-radius:8px;padding:8px 10px;text-align:left;width:100%}
+.cand:hover{border-color:var(--navy)}
+.cand .c1{font-weight:bold;color:var(--navy);font-size:13px}
+.cand .c2{font-size:11.5px;color:var(--mute)}
+.cand.used{opacity:.45}
+.cand.hint{border:2px solid var(--gold)}
+.mfield{display:flex;flex-direction:column;gap:4px;font-size:13px}
+.mfield input,.mfield select{border:1px solid var(--line);border-radius:6px;padding:9px 10px;background:var(--white)}
+.mean{background:var(--pale);border-radius:8px;padding:8px 10px;font-size:12.5px}
+.errscr{position:absolute;inset:0;background:var(--white);z-index:25;display:flex;flex-direction:column}
+.errscr .eh{background:var(--ng);color:var(--white);padding:18px 16px 14px}
+.errscr .eh b{font-size:18px;display:block}
+.errscr .eh span{font-size:12px;opacity:.9}
+.errscr .eb{flex:1;overflow:auto;padding:14px;display:flex;flex-direction:column;gap:10px}
+.cmp{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.cmp>div{border-radius:8px;padding:8px 10px;font-size:12.5px}
+.cmp .rd{background:var(--ngbg);border:1px solid #EFC4BF}
+.cmp .xp{background:var(--pale);border:1px solid var(--line)}
+.cmp .t{font-size:11px;color:var(--mute)}
+.toast{position:absolute;left:14px;right:14px;bottom:96px;background:var(--navy);color:var(--white);border-radius:10px;padding:10px 14px;font-size:13px;z-index:30;box-shadow:0 6px 20px rgba(0,0,0,.25);display:flex;gap:8px;align-items:center}
+.toast.ok::before{content:"✓";color:#8FE0B7;font-weight:bold}
+.dev.pc .toast{left:auto;right:20px;width:380px;bottom:80px}
+
+/* ガイド（スマホ） */
+.gsheet{position:absolute;inset:0;z-index:40;background:rgba(18,26,46,.5);display:flex;align-items:flex-end}
+.gsheet .guide{position:static;max-height:88%;width:100%;border-radius:16px 16px 0 0;border:0}
+
+@media (max-width:1000px){
+  .stage{grid-template-columns:1fr;padding:0;gap:0;height:100%}
+  .stage>.guide{display:none}
+  .devwrap{height:100%}
+  .dev,.dev.pc{width:100%;height:100%;min-height:0;border:0;border-radius:0;box-shadow:none}
+  .dev.pc::before{display:none}
+  .proto .gbtn{display:inline-block}
+  .pcgrid{grid-template-columns:1fr}
+  .hdr{padding-left:max(12px,env(safe-area-inset-left,0px));padding-right:max(12px,env(safe-area-inset-right,0px))}
+  .content,.actions{padding-left:max(14px,env(safe-area-inset-left,0px));padding-right:max(14px,env(safe-area-inset-right,0px))}
+  .dev.pc .actions{flex-direction:column}
+  .dev.pc .btn{width:100%}
+}
+</style>
+</head>
+<body>
+
+<div id="app"></div>
+
+<script>
+(function(){
+"use strict";
+
+/* ===== マスタ（すべて架空） ===== */
+const USERS={sato01:{name:"佐藤 一郎",role:"製造部"},suzuki02:{name:"鈴木 花子",role:"製造部（確認者）"}};
+const ITEMS={
+  A:{code:"M-1001",name:"主薬A",plan:10.000},
+  B:{code:"M-2001",name:"賦形剤B",plan:8.400},
+  C:{code:"M-3001",name:"崩壊剤C",plan:1.400},
+  D:{code:"M-4001",name:"滑沢剤D",plan:0.200}
+};
+const KEYS=["A","B","C","D"];
+const MO="MO-2611-001", PRODUCT="サンプル錠 100mg", BATCH="B2611-01";
+const DSPEC=[
+  {k:"mixT",sec:"混合",label:"混合時間",unit:"分",min:14,max:16,def:"15"},
+  {k:"rpm",sec:"混合",label:"回転数",unit:"rpm",min:18,max:22,def:"20"},
+  {k:"press",sec:"打錠",label:"打錠圧",unit:"kN",min:8,max:12,def:"10.2"},
+  {k:"wt",sec:"打錠",label:"平均錠剤重量",unit:"mg",min:190,max:210,def:"200.4"},
+  {k:"hard",sec:"打錠",label:"硬度",unit:"N",min:50,max:90,def:"68"},
+  {k:"temp",sec:"作業環境",label:"室温",unit:"℃",min:15,max:25,def:"22.5"},
+  {k:"hum",sec:"作業環境",label:"湿度",unit:"%RH",min:null,max:60,def:"45"},
+  {k:"qty",sec:"出来高",label:"素錠 製造数",unit:"錠",min:95000,max:100000,def:"98500",spec:"理論 100,000錠／収率 95.0%以上"}
+];
+const ESPEC=[
+  {k:"boxes",label:"出来高",unit:"箱",def:"980",spec:"100錠／箱（PTP 10錠×10シート）"},
+  {k:"defect",label:"不良",unit:"錠",def:"300",spec:"外観不良・シール不良"},
+  {k:"sample",label:"保存サンプル",unit:"錠",def:"200",spec:"参考品・保存品"},
+  {k:"temp",label:"包装室 室温",unit:"℃",min:15,max:25,def:"23.0"},
+  {k:"film",label:"PTPフィルム ロット",def:"PF-2610-118",text:true}
+];
+
+/* ===== 状態 ===== */
+let S;
+function fresh(){
+  const t=new Date(2026,10,10,8,30);
+  S={screen:"login",p:{},user:null,clock:t,f:{},audit:[],seq:0,
+    lots:{},prog:{A:false,B:false,W:false,C:false,D:false,E:false,F:false},
+    moved:{},wScan:{},weighed:{},cScan:{},eScan:false,fScan:false,
+    rec:{},modal:null,sheet:null,err:null,toast:null,photos:[],phSeq:0,phPending:null,view:null,gopen:false,auditF:"all",auditQ:"",auditOpen:null,wSel:null,released:false};
+  const L=(id,o)=>S.lots[id]=Object.assign({id,reads:[],parents:[]},o);
+  L("R-2610-0412",{kind:"raw",key:"A",qty:"40.00 kg",exp:"2028-09-30",status:"合格",loc:"原料倉庫 A-01",issued:{step:"①受入",at:"10/14 10:12",by:"田中 健"}});
+  L("R-2609-0188",{kind:"raw",key:"B",qty:"60.00 kg",exp:"2029-03-31",status:"合格",loc:"原料倉庫 A-04",issued:{step:"①受入",at:"9/22 14:40",by:"田中 健"}});
+  L("R-2411-0077",{kind:"raw",key:"B",qty:"3.20 kg",exp:"2026-10-31",status:"合格",loc:"原料倉庫 A-05",issued:{step:"①受入",at:"2024/11/18",by:"田中 健"}});
+  L("R-2610-0255",{kind:"raw",key:"C",qty:"12.00 kg",exp:"2028-12-31",status:"合格",loc:"原料倉庫 B-02",issued:{step:"①受入",at:"10/20 09:05",by:"田中 健"}});
+  L("R-2608-0102",{kind:"raw",key:"D",qty:"2.50 kg",exp:"2028-06-30",status:"合格",loc:"原料倉庫 B-07",issued:{step:"①受入",at:"8/28 15:30",by:"田中 健"}});
+  // 照合エラーを見せるための別ラベル
+  L("W-2610-0233",{kind:"weighed",key:"A",qty:"5.000 kg",status:"秤量済",mo:"MO-2610-004",issued:{step:"④秤量",at:"10/30 09:41",by:"佐藤 一郎"}});
+  L("B2610-04",{kind:"bulk",name:"サンプル錠 50mg 素錠",qty:"49,200 錠",status:"記録確定",mo:"MO-2610-004",issued:{step:"⑥製剤完了",at:"10/31 16:02",by:"佐藤 一郎"}});
+  L("B2611-02",{kind:"bulk",name:"サンプル錠 100mg 素錠",qty:"—",status:"記録確定前",mo:"MO-2611-002",issued:null});
+  L("P2610-03",{kind:"product",name:PRODUCT,qty:"500 箱",status:"合格",issued:{step:"⑦包装",at:"10/28 15:20",by:"佐藤 一郎"}});
+}
+fresh();
+
+/* ===== ユーティリティ ===== */
+const pad=n=>String(n).padStart(2,"0");
+const tm=d=>`${d.getMonth()+1}/${d.getDate()} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
+const tmFull=d=>`${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`;
+const tick=(m)=>{S.clock=new Date(S.clock.getTime()+m*60000+((S.seq*17)%50)*1000)};
+const esc=s=>String(s==null?"":s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const n0=v=>Number(v).toLocaleString("ja-JP");
+const uname=id=>USERS[id]?USERS[id].name:id;
+const lotName=l=>l.kind==="raw"?ITEMS[l.key].name:l.kind==="weighed"?ITEMS[l.key].name+"（秤量済）":l.name;
+const term=()=>S.screen.startsWith("W")?"秤量PC-01":"スマホ-03";
+function log(action,target,detail,o){
+  S.seq++;
+  S.audit.unshift(Object.assign({id:S.seq,at:tmFull(S.clock),user:S.user?uname(S.user):"—",term:term(),action,target,detail},o||{}));
+}
+function stepOfScreen(){const s=S.screen;return s.startsWith("W")?"③④秤量":s.startsWith("A")?"①受入":s.startsWith("B")?"②移動":s.startsWith("C")?"⑤投入":s.startsWith("D")?"⑥製剤完了":s.startsWith("E")?"⑦包装":s.startsWith("F")?"⑧出荷":"—"}
+function readLot(id){S.lots[id].reads.push({step:stepOfScreen(),at:tm(S.clock),by:uname(S.user)})}
+
+/* 疑似QR（見た目のみ） */
+function qr(seed,size){
+  size=size||72;let h=0;for(const c of seed)h=(h*31+c.charCodeAt(0))>>>0;
+  const n=21,u=size/n;let r="";
+  const fin=(x,y)=>`<rect x="${x*u}" y="${y*u}" width="${7*u}" height="${7*u}" fill="#1E2A4A"/><rect x="${(x+1)*u}" y="${(y+1)*u}" width="${5*u}" height="${5*u}" fill="#fff"/><rect x="${(x+2)*u}" y="${(y+2)*u}" width="${3*u}" height="${3*u}" fill="#1E2A4A"/>`;
+  for(let y=0;y<n;y++)for(let x=0;x<n;x++){
+    if((x<8&&y<8)||(x>12&&y<8)||(x<8&&y>12))continue;
+    h=(h*1103515245+12345)>>>0;if((h>>16)&1)r+=`<rect x="${x*u}" y="${y*u}" width="${u+.2}" height="${u+.2}" fill="#1E2A4A"/>`;
+  }
+  return `<svg width="${size}" height="${size}" viewBox="0 0 ${size} ${size}" aria-hidden="true"><rect width="${size}" height="${size}" fill="#fff"/>${fin(0,0)}${fin(14,0)}${fin(0,14)}${r}</svg>`;
+}
+
+/* ===== 業務処理（画面操作と「この工程から始める」で共用） ===== */
+const core={
+  receive(){
+    const v=S.f;
+    S.lots["R-2611-0031"]={id:"R-2611-0031",kind:"raw",key:"A",qty:(v.a_qty||"25.00")+" kg",exp:v.a_exp||"2028-10-31",status:"判定前",loc:v.a_loc||"原料倉庫 A-03",sup:v.a_sup||"SUP-A-24117",cont:v.a_cont||"5",reads:[],parents:[],issued:null};
+    const ph=S.photos.filter(p=>!p.replaced);S.photos.forEach(p=>p.lot="R-2611-0031");
+    log("受入登録","R-2611-0031 主薬A",`入荷予定 PO-2611-0021／数量 ${(v.a_qty||"25.00")} kg／容器 ${(v.a_cont||"5")}／使用期限 ${(v.a_exp||"2028-10-31")}／状態 品質判定前`+(ph.length?`／写真 ${ph.length}枚（${ph.map(p=>p.id).join("、")}）`:""),{sign:"実施"});
+    tick(3);
+  },
+  issueRaw(){
+    S.lots["R-2611-0031"].issued={step:"①受入",at:tm(S.clock),by:uname(S.user)};
+    log("ラベル発行","R-2611-0031 主薬A",`原料ラベル ${S.lots["R-2611-0031"].cont}枚`);
+    S.prog.A=true;tick(6);
+  },
+  scanMove(id){const l=S.lots[id];S.moved[l.key]=id;readLot(id);log("QR照合 OK",`${id} ${lotName(l)}`,"移動指示 MV-2611-014 と一致",{res:"OK"});tick(1)},
+  move(){
+    KEYS.forEach(k=>{S.lots[S.moved[k]].loc="秤量室"});
+    log("移動実績登録","MV-2611-014",`原料倉庫 → 秤量室／${KEYS.map(k=>S.moved[k]).join("、")}`,{sign:"実施"});
+    S.prog.B=true;tick(12);
+  },
+  scanW(k,id){S.wScan[k]=id;readLot(id);log("QR照合 OK（秤量前）",`${id} ${ITEMS[k].name}`,`製造指図 ${MO} の ${ITEMS[k].name} と一致`,{res:"OK"});tick(1)},
+  weigh(k){
+    const off=[0.002,-0.006,0.001,0.000][KEYS.indexOf(k)];
+    const val=(ITEMS[k].plan+off).toFixed(3);
+    const wid="W-2611-00"+(11+KEYS.indexOf(k));
+    S.weighed[k]={wid,val};
+    S.lots[wid]={id:wid,kind:"weighed",key:k,qty:val+" kg",status:"秤量済",mo:MO,reads:[],parents:[S.wScan[k]],issued:null};
+    log("秤量実績登録",`${ITEMS[k].name}`,`指図量 ${ITEMS[k].plan.toFixed(3)} kg／秤量値 ${val} kg（秤から取込）／原料ロット ${S.wScan[k]}`,{sign:"実施"});
+    tick(1);
+    S.lots[wid].issued={step:"④秤量",at:tm(S.clock),by:uname(S.user)};
+    log("ラベル発行",`${wid} ${ITEMS[k].name}`,"秤量済ラベル 1枚");
+    tick(5);
+    if(KEYS.every(x=>S.weighed[x]))S.prog.W=true;
+  },
+  scanC(id){const l=S.lots[id];S.cScan[l.key]=id;readLot(id);log("QR照合 OK（投入）",`${id} ${lotName(l)}`,`製造指図 ${MO} と一致`,{res:"OK"});tick(2)},
+  charge(){
+    S.rec.D={start:tm(S.clock)};
+    log("投入確定",MO,`秤量済 ${KEYS.map(k=>S.weighed[k].wid).join("、")} を投入`,{sign:"実施"});
+    S.prog.C=true;tick(95);
+  },
+  recD(conf){
+    const vals={};DSPEC.forEach(s=>vals[s.k]=S.f["d_"+s.k]!=null?S.f["d_"+s.k]:s.def);
+    Object.assign(S.rec.D,{vals,dev:!!dFails().length,memo:S.f.d_memo||"",worker:S.user,wAt:tm(S.clock),conf,cAt:null,end:tm(S.clock),hist:[],reconf:false});
+    log("主要製造記録 確定",`${BATCH} 製剤（混合・打錠）`,DSPEC.map(s=>`${s.label} ${vals[s.k]}${s.unit}`).join("／")+(S.rec.D.dev?`／逸脱メモ：${S.rec.D.memo}`:""),{sign:"実施"});
+    tick(2);S.rec.D.cAt=tm(S.clock);
+    log("電子署名（確認）",`${BATCH} 製剤記録`,"確認者による確認",{sign:"確認",user:uname(conf)});
+    tick(2);
+  },
+  issueBulk(){
+    const q=S.rec.D.vals.qty;
+    S.lots[BATCH]={id:BATCH,kind:"bulk",name:"サンプル錠 100mg 素錠",qty:n0(q)+" 錠",status:"記録確定",mo:MO,reads:[],parents:KEYS.map(k=>S.weighed[k].wid),issued:{step:"⑥製剤完了",at:tm(S.clock),by:uname(S.user)}};
+    log("ラベル発行",`${BATCH} 素錠`,"バルクラベル 1枚");
+    S.prog.D=true;tick(25);
+  },
+  scanE(){S.eScan=true;readLot(BATCH);log("QR照合 OK（包装投入）",`${BATCH} 素錠`,"包装指図 PK-2611-001 と一致",{res:"OK"});tick(3)},
+  recE(conf){
+    const vals={};ESPEC.forEach(s=>vals[s.k]=S.f["e_"+s.k]!=null?S.f["e_"+s.k]:s.def);
+    const b=eBalance();
+    S.rec.E={vals,input:b.input,diff:b.diff,dev:b.diff!==0||eFails().length>0,memo:S.f.e_memo||"",worker:S.user,wAt:tm(S.clock),conf,hist:[],reconf:false,start:tm(S.clock)};
+    log("主要製造記録 確定","P2611-01 包装",`投入 ${n0(b.input)}錠／出来高 ${vals.boxes}箱／不良 ${vals.defect}錠／サンプル ${vals.sample}錠／収支差 ${b.diff}錠`,{sign:"実施"});
+    tick(2);S.rec.E.cAt=tm(S.clock);
+    log("電子署名（確認）","P2611-01 包装記録","確認者による確認",{sign:"確認",user:uname(conf)});
+    tick(2);
+  },
+  issueProduct(){
+    S.lots["P2611-01"]={id:"P2611-01",kind:"product",name:PRODUCT,qty:n0(S.rec.E.vals.boxes)+" 箱",status:"出荷判定前",reads:[],parents:[BATCH],issued:{step:"⑦包装",at:tm(S.clock),by:uname(S.user)}};
+    log("ラベル発行","P2611-01 "+PRODUCT,`製品ラベル（ケース）${Math.ceil(S.rec.E.vals.boxes/10)}枚`);
+    S.prog.E=true;tick(60*24);
+  },
+  release(){S.lots["P2611-01"].status="合格";S.released=true;log("出荷判定（デモ操作）","P2611-01","品質保証による出荷判定を模擬（本プロトタイプの範囲外）",{user:"品質保証（デモ）"});tick(30)},
+  scanF(){S.fScan=true;readLot("P2611-01");log("QR照合 OK（出荷）","P2611-01 "+PRODUCT,"出荷指示 SH-2611-007 と一致",{res:"OK"});tick(5)},
+  ship(){log("出荷登録","SH-2611-007",`P2611-01 ${PRODUCT} ${S.lots["P2611-01"].qty}／出荷先 架空卸 東日本センター`,{sign:"実施"});S.prog.F=true;tick(10)}
+};
+
+/* 照合（スキャン）判定 */
+function judge(ctx,id){
+  if(id==="HAND")return {type:"unissued"};
+  const l=S.lots[id];
+  if(ctx==="B"){
+    if(l.kind!=="raw")return {type:"mismatch",expect:"移動指示の原料"};
+    if(S.moved[l.key])return {type:"dup",expect:`${ITEMS[l.key].name} は読取済み（${S.moved[l.key]}）`};
+    if(l.status==="判定前")return {type:"pending"};
+    if(l.exp<"2026-11-10")return {type:"expired"};
+    return {ok:true};
+  }
+  if(ctx==="W"){const k=S.wSel;
+    if(S.moved[k]!==id)return {type:"mismatch",expect:`${ITEMS[k].name}（${S.moved[k]}）`};
+    return {ok:true};
+  }
+  if(ctx==="C"){
+    if(l.mo!==MO)return {type:"mismatch",expect:`製造指図 ${MO} の秤量済ラベル`};
+    if(S.cScan[l.key])return {type:"dup",expect:"未読取の秤量済ラベル"};
+    return {ok:true};
+  }
+  if(ctx==="E"){
+    if(id===BATCH)return {ok:true};
+    if(l.status==="記録確定前")return {type:"prev"};
+    return {type:"mismatch",expect:`${BATCH} サンプル錠 100mg 素錠`};
+  }
+  if(ctx==="F"){
+    if(id!=="P2611-01")return {type:"mismatch",expect:"P2611-01（出荷指示で指定されたロット）"};
+    if(l.status!=="合格")return {type:"shipPending"};
+    return {ok:true};
+  }
+}
+const ERR={
+  mismatch:{t:"ロット不一致",s:"指図と違う現品です",fix:"指図に書かれた品目・ロットのラベルを読み直してください。"},
+  unissued:{t:"ラベル未発行",s:"システムが発行したラベルではありません",fix:"手書きや旧様式のラベルは使えません。この現品は作業を止め、責任者に連絡してください。"},
+  prev:{t:"前工程が完了していません",s:"製剤記録が確定していないバルクです",fix:"前工程の主要製造記録が確定し、ラベルが発行されてから読み直してください。"},
+  pending:{t:"品質判定前",s:"試験の判定が出ていない原料です",fix:"判定が「合格」の原料を読み直してください。判定前の原料は移動・使用できません。"},
+  expired:{t:"使用期限切れ",s:"使用期限を過ぎた原料です",fix:"使用期限内の原料を読み直してください。この現品は隔離の手順に従ってください。"},
+  dup:{t:"読取済み",s:"このラベルはすでに読み取っています",fix:"まだ読んでいないラベルを読み取ってください。"},
+  shipPending:{t:"出荷判定前",s:"出荷判定が出ていない製品です",fix:"品質保証の出荷判定が「合格」になってから出荷登録できます。"}
+};
+
+/* 候補ラベル（実機ではカメラで読み取る） */
+function candidates(ctx){
+  const c=(id,hint)=>({id,hint});
+  if(ctx==="B")return [c("R-2611-0031","err"),c("R-2610-0412","ok"),c("R-2411-0077","err"),c("R-2609-0188","ok"),c("R-2610-0255","ok"),c("R-2608-0102","ok")];
+  if(ctx==="W")return KEYS.map(k=>c(S.moved[k],k===S.wSel?"ok":"err"));
+  if(ctx==="C")return [c("HAND","err"),...KEYS.map(k=>c(S.weighed[k].wid,"ok")),c("W-2610-0233","err")];
+  if(ctx==="E")return [c("B2611-02","err"),c("B2610-04","err"),c(BATCH,"ok")];
+  if(ctx==="F")return [c("P2610-03","err"),c("P2611-01",S.released?"ok":"err")];
+}
+function used(ctx,id){
+  if(ctx==="B")return Object.values(S.moved).includes(id);
+  if(ctx==="W")return KEYS.some(k=>S.wScan[k]===id&&k!==S.wSel);
+  if(ctx==="C")return Object.values(S.cScan).includes(id);
+  if(ctx==="E")return S.eScan&&id===BATCH;
+  if(ctx==="F")return S.fScan&&id==="P2611-01";
+  return false;
+}
+
+/* ⑥ 規格チェック */
+function dVal(k){const s=DSPEC.find(x=>x.k===k);return S.f["d_"+k]!=null?S.f["d_"+k]:s.def}
+function outOf(s,v){const x=parseFloat(String(v).replace(/,/g,""));if(isNaN(x))return true;return (s.min!=null&&x<s.min)||(s.max!=null&&x>s.max)}
+function dFails(){return DSPEC.filter(s=>outOf(s,dVal(s.k)))}
+function eVal(k){const s=ESPEC.find(x=>x.k===k);return S.f["e_"+k]!=null?S.f["e_"+k]:s.def}
+function eFails(){return ESPEC.filter(s=>s.min!=null&&outOf(s,eVal(s.k)))}
+function eBalance(){
+  const input=S.rec.D&&S.rec.D.vals?Number(S.rec.D.vals.qty):98500;
+  const out=Number(eVal("boxes"))*100,def=Number(eVal("defect")),sam=Number(eVal("sample"));
+  return {input,out,def,sam,diff:input-(out+def+sam)};
+}
+
+/* ===== ガイド（筋書き） ===== */
+const GUIDE=[
+  {id:"login",label:"ログイン",go:"login",need:null,
+    point:"JIPROS本体と同じユーザーでログインします。現場端末はWebアプリで、APIを通じて本体と同じデータベースにつながります。"},
+  {id:"A",label:"① 受入",go:"A1",need:"login",
+    point:"受け入れた時点でロットが生まれ、原料ラベルが発行されます。現品と記録は、ここから一致しています。",
+    tryit:"<b>外装の写真</b>を撮ってみてください（カメラが起動します）。受入後の状態が「品質判定前」になることも確認してください。次の工程で効いてきます。"},
+  {id:"B",label:"② 倉庫 → 秤量室",go:"B1",need:"A",
+    point:"移動指示に対して、現品のラベルを読んで照合します。判定前・期限切れの原料は、読んだ時点で止まります。",
+    tryit:"先ほど受け入れた <b>R-2611-0031（判定前）</b> や <b>R-2411-0077（期限切れ）</b> を読んでみてください。"},
+  {id:"W",label:"③④ 秤量（秤量PC）",go:"W1",need:"B",
+    point:"秤量の前にロットを照合し、秤量値は手入力せず取り込みます。秤量済ラベルを発行し、次の工程へ渡します。",
+    tryit:"主薬Aの行で、<b>別の原料のラベル</b>を読んでみてください（ロット不一致）。"},
+  {id:"C",label:"⑤ 製剤室（投入）",go:"C1",need:"W",
+    point:"発行したラベルは、次の工程で必ず読まれます。この往復が切れないことが、現品の証跡になります。",
+    tryit:"<b>手書きラベル</b>や<b>別の指図の秤量済ラベル</b>を読んでみてください。"},
+  {id:"D",label:"⑥ 製剤室（完了）",go:"D1",need:"C",
+    point:"主要製造記録を、作業と同時にその場で入力します。規格外の値は逸脱メモがないと確定できません。作業者と確認者は別の人です。",
+    tryit:"室温に <b>27</b> と入れてみる。確認者に<b>佐藤（作業者本人）</b>を選んでみる。"},
+  {id:"E",label:"⑦ 包装室",go:"E1",need:"D",
+    point:"投入した素錠と、出来高・不良・サンプルの収支をその場で確かめます。",
+    tryit:"不良数を変えて、収支差が出ると確定できなくなることを見てください。"},
+  {id:"F",label:"⑧ 出荷",go:"F1",need:"E",
+    point:"出荷指示と製品ラベルを照合します。出荷判定前の製品は出荷登録できません。",
+    tryit:"P2611-01 を読むと、判定前で止まります。デモ操作で判定済みにして進めます。"},
+  {id:"T",label:"ロットトレース",go:"trace",need:"F",
+    point:"製品から原料まで、ラベルの「発行」と「読取」の往復で一本につながります。在庫・出納と製造記録が同じデータベースにあるので、境目がありません。"},
+  {id:"X",label:"記録の修正",go:"recD",need:"F",
+    point:"記録を修正するときは、修正理由を入れないと確定できません。修正前の値は消えずに残り、確認者の再確認が必要になります。",
+    tryit:"製剤記録の<b>室温</b>を修正してみてください。"},
+  {id:"L",label:"監査証跡",go:"audit",need:"F",
+    point:"照合NGも含めて、誰が・いつ・どの端末で・何を・なぜ、を検索できます。監査証跡はDB側で生成する設計です（このプロトタイプでは画面内で模擬）。"}
+];
+function guideCur(){
+  const s=S.screen;
+  if(s==="login")return "login";
+  if(s==="home"){const n=["A","B","W","C","D","E","F"].find(k=>!S.prog[k]);return n||"T"}
+  if(s==="trace")return "T"; if(s==="audit")return "L"; if(s==="recD"||s==="recE")return "X";
+  return s[0];
+}
+function guideDone(id){if(id==="login")return !!S.user;if(S.prog[id]!=null)return S.prog[id];return false}
+
+function jumpTo(id){
+  fresh();S.user="sato01";log("ログイン","sato01","JIPROS共通ユーザーで認証");tick(2);
+  const order=["A","B","W","C","D","E","F"];
+  const idx=id==="login"?-1:id==="A"?0:order.indexOf(id)>=0?order.indexOf(id):7;
+  const run={
+    A:()=>{core.receive();core.issueRaw()},
+    B:()=>{S.screen="B2";["R-2610-0412","R-2609-0188","R-2610-0255","R-2608-0102"].forEach(core.scanMove);core.move()},
+    W:()=>{S.screen="W1";KEYS.forEach(k=>{S.wSel=k;core.scanW(k,S.moved[k]);core.weigh(k)});S.wSel=null},
+    C:()=>{S.screen="C1";KEYS.forEach(k=>core.scanC(S.weighed[k].wid));core.charge()},
+    D:()=>{S.screen="D1";core.recD("suzuki02");core.issueBulk()},
+    E:()=>{S.screen="E1";core.scanE();core.recE("suzuki02");core.issueProduct()},
+    F:()=>{S.screen="F1";core.release();core.scanF();core.ship()}
+  };
+  for(let i=0;i<idx&&i<order.length;i++)run[order[i]]();
+  S.f={};
+  const g=GUIDE.find(x=>x.id===id);
+  if(id==="login"){S.user=null;S.audit=[];S.screen="login"}
+  else go(g.go);
+  S.gopen=false;
+}
+
+/* ===== 画面 ===== */
+function go(s,p){S.screen=s;S.p=p||{};S.sheet=null;S.modal=null;S.err=null}
+function hdrWho(){return S.user?`${esc(uname(S.user))}<br>${term()}`:""}
+
+const SCR={};
+
+SCR.login=()=>({title:"ログイン",sub:"ERP一体型EBR 現場端末",back:null,
+  body:`<div class="card" style="text-align:center;padding:22px 14px">
+    <p class="eyebrow">JIPROS 共通ユーザー</p>
+    <b style="font-size:18px;color:var(--navy)">ERP一体型EBR</b>
+    <p style="margin:4px 0 0;font-size:12px;color:var(--mute)">出納と主要な製造記録を、ERPの中で、現場端末から</p></div>
+    <div class="mfield"><label for="lg_id">ユーザーID</label><input id="lg_id" value="sato01" readonly></div>
+    <div class="mfield"><label for="lg_pw">パスワード</label><input id="lg_pw" type="password" value="demo"></div>
+    <p class="info">デモ用に入力済みです。ユーザーはJIPROS本体と共通です。</p>`,
+  actions:`<button class="btn pri" data-a="login">ログイン</button>`});
+
+SCR.home=()=>{
+  const T=[["A","①","受入","原料ラベル発行","A1","i"],["B","②","倉庫→秤量室","原料ラベル読取","B1","r"],["W","③④","秤量","秤量PCで実施","W1","i"],["C","⑤","製剤室 投入","秤量済ラベル読取","C1","r"],["D","⑥","製剤室 完了","バルクラベル発行","D1","i"],["E","⑦","包装室","バルク読取／製品ラベル","E1","i"],["F","⑧","出荷","製品ラベル読取","F1","r"]];
+  const order=T.map(t=>t[0]);const next=order.find(k=>!S.prog[k]);
+  const tiles=T.map(([k,no,name,sub,scr])=>{
+    const st=S.prog[k]?"done":k===next?"next":"lock";
+    const chip=st==="done"?`<span class="chip ok">完了</span>`:st==="next"?`<span class="chip gold">次の作業</span>`:`<span class="chip">前工程待ち</span>`;
+    return `<button class="tile ${st}" data-a="tile" data-k="${k}" data-s="${scr}"><span class="tn">${no}</span><span class="tt">${name}</span><span class="tn" style="font-size:11px">${sub}</span><span class="tm">${chip}</span></button>`;
+  }).join("");
+  return {title:"ホーム",sub:`製造指図 ${MO}　${PRODUCT}`,back:null,
+    body:`<div class="card"><p class="eyebrow">本日の作業</p><dl class="kv"><dt>製造指図</dt><dd>${MO}</dd><dt>品目</dt><dd>${PRODUCT}（架空）</dd><dt>バッチ</dt><dd>${BATCH}　20.000 kg／理論 100,000錠</dd></dl></div>
+    <div class="flowmark"><span class="fm i">金＝ラベル発行</span><span class="fm r">紺＝QR読取</span></div>
+    <div class="tiles">${tiles}
+      <button class="tile wide" data-a="nav" data-s="trace"><span class="tt">ロットトレース</span><span class="tn">製品から原料まで</span></button>
+      <button class="tile wide" data-a="nav" data-s="audit"><span class="tt">監査証跡</span><span class="tn">${S.audit.length} 件</span></button>
+    </div>`,actions:""};
+};
+
+/* ① 受入 */
+SCR.A1=()=>({title:"① 受入",sub:"入荷予定を選ぶ",back:"home",
+  body:`<div class="list">
+    <button class="row" data-a="nav" data-s="A2"><span class="r1">主薬A　25.00 kg</span><span class="r2">PO-2611-0021／架空化学 株式会社／予定 11/10</span><span class="rr"><span class="chip gold">本日</span></span></button>
+    <div class="row dim"><span class="r1">賦形剤B　100.00 kg</span><span class="r2">PO-2611-0024／架空ケミカル／予定 11/12</span><span class="rr"><span class="chip">予定日前</span></span></div>
+    <div class="row dim"><span class="r1">PTPフィルム　20 巻</span><span class="r2">PO-2611-0026／架空包材／予定 11/13</span><span class="rr"><span class="chip">予定日前</span></span></div></div>`,actions:""});
+SCR.A2=()=>{const f=(k,label,def,unit,type)=>`<div class="fld"><label for="${k}">${label}</label><span class="spec">${unit||""}</span><span class="in"><input id="${k}" data-f="${k}" type="${type||"text"}" class="${type==="text"?"l":""}" value="${esc(S.f[k]!=null?S.f[k]:def)}"></span></div>`;
+  return {title:"① 受入",sub:"受入内容を入力",back:"A1",
+  body:`<div class="card"><dl class="kv"><dt>入荷予定</dt><dd>PO-2611-0021</dd><dt>品目</dt><dd>主薬A（M-1001）</dd><dt>仕入先</dt><dd>架空化学 株式会社</dd></dl></div>
+  <div class="fsec">
+    ${f("a_sup","仕入先ロット","SUP-A-24117","","text")}
+    ${f("a_qty","受入数量","25.00","kg")}
+    ${f("a_cont","容器数","5","個")}
+    ${f("a_exp","使用期限","2028-10-31","","text")}
+    ${f("a_loc","保管場所","原料倉庫 A-03","","text")}
+  </div>
+  ${photosHTML(true)}
+  <p class="info">受入後の状態は「品質判定前」になります。試験の判定が「合格」になるまで、移動・使用はできません。</p>`,
+  actions:`<button class="btn pri" data-a="A_reg">受入を登録する</button>`};};
+SCR.A3=()=>{const l=S.lots["R-2611-0031"];const done=!!l.issued;
+  return {title:"① 受入",sub:done?"完了":"原料ラベル発行",back:done?"home":null,
+  body:`${done?`<div class="issued"><span class="big">✓</span><b>原料ラベルを ${esc(l.cont)} 枚発行しました</b><span class="stamp">${esc(l.issued.at)}　${esc(l.issued.by)}</span></div>`:`<p class="alert ok">受入を登録しました。ロット番号 R-2611-0031 を採番しました。</p>`}
+  ${labelHTML("原料ラベル",l,`1 / ${l.cont}`)}
+  <p class="info">このラベルは次の工程（倉庫→秤量室）で読み取られます。</p>
+  ${S.photos.length?photosHTML(false):""}`,
+  actions:done?`<button class="btn sec" data-a="nav" data-s="home">ホームへ戻る</button>`:`<button class="btn issue" data-a="A_issue">原料ラベルを発行する（${esc(l.cont)}枚）</button>`};};
+
+/* 受入の写真 */
+const CAM=`<svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M9 4 7.2 6H4a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-3.2L15 4H9Zm3 4.5a4.5 4.5 0 1 1 0 9 4.5 4.5 0 0 1 0-9Zm0 2a2.5 2.5 0 1 0 0 5 2.5 2.5 0 0 0 0-5Z"/></svg>`;
+function photosHTML(editable){
+  const ps=S.photos;const kinds=["外装","メーカー表示","書類"];const kind=S.f.ph_kind||"外装";
+  const live=ps.filter(p=>!p.replaced).length;
+  return `<div class="fsec"><h3>受入時の写真 <span class="chip">${live}枚</span></h3>
+  ${editable?`<div class="chips">${kinds.map(k=>`<button class="${k===kind?"on":""}" data-a="phKind" data-k="${k}">${k}</button>`).join("")}</div>
+  ${S.phPending?`<p class="alert warn">差し替え：${esc(S.phPending.replaces)} の代わりの写真を撮影してください。　<button class="link" data-a="phPendCancel">取りやめる</button></p>`:""}
+  <label class="btn sec" for="ph_in">${CAM}${S.phPending?"差し替えの写真を撮る":`「${kind}」の写真を撮る`}</label>`:""}
+  ${ps.length?`<div class="phgrid">${ps.map(p=>`<div class="ph ${p.replaced?"old":""}"><button class="phimg" data-a="phView" data-k="${p.id}" aria-label="${p.kind}の写真 ${p.id} を拡大"><img src="${p.data}" alt=""></button>
+    <div class="phm"><span class="chip ${p.replaced?"":"gold"}">${esc(p.kind)}</span><span class="stamp num">${p.id}　${esc(p.at)}</span>
+    ${p.replaced?`<span class="stamp">差し替え済 → ${p.replaced.by}</span>`:editable?`<button class="link" data-a="phRep" data-k="${p.id}">差し替え</button>`:""}</div></div>`).join("")}</div>`
+   :`<p class="phempty">まだ写真はありません。種類を選んで撮影してください（任意）。</p>`}
+  ${editable?`<p class="stamp" style="margin:0">撮影した写真は削除できません。差し替えるときは理由を入力し、元の写真も残ります。プロトタイプでは写真をこの画面の中だけに保持し、ページを開き直すと消えます。</p>`:""}</div>`;
+}
+function readPhoto(file,cb){
+  const url=URL.createObjectURL(file);const img=new Image();
+  img.onload=()=>{const m=1024;const s=Math.min(1,m/Math.max(img.naturalWidth,img.naturalHeight));
+    const c=document.createElement("canvas");c.width=Math.round(img.naturalWidth*s);c.height=Math.round(img.naturalHeight*s);
+    c.getContext("2d").drawImage(img,0,0,c.width,c.height);URL.revokeObjectURL(url);cb(c.toDataURL("image/jpeg",0.8))};
+  img.onerror=()=>{URL.revokeObjectURL(url);toast("画像を読み込めませんでした。もう一度撮影してください");render()};
+  img.src=url;
+}
+function addPhoto(data){
+  S.phSeq++;const id="PH-"+String(S.phSeq).padStart(3,"0");
+  const p={id,kind:S.f.ph_kind||"外装",data,at:tm(S.clock),by:uname(S.user),term:term(),lot:S.lots["R-2611-0031"]?"R-2611-0031":null,replaced:null};
+  if(S.phPending){
+    const old=S.photos.find(x=>x.id===S.phPending.replaces);p.kind=old.kind;old.replaced={by:id,reason:S.phPending.reason};
+    log("写真の差し替え",`受入 PO-2611-0021：${old.kind}`,`${old.id} → ${id}（元の写真は保持）`,{before:old.id,after:id,reason:S.phPending.reason,photo:id});
+    S.phPending=null;S.photos.push(p);toast(`${old.id} を ${id} に差し替えました`);
+  }else{
+    log("写真添付",`受入 PO-2611-0021：${p.kind}`,`${id}（${term()} のカメラで撮影）`,{photo:id});
+    S.photos.push(p);toast(`${p.kind}の写真 ${id} を追加しました`);
+  }
+  tick(1);
+}
+
+function labelHTML(kind,l,cnt){
+  const rows=l.kind==="raw"?`<dt>品目</dt><dd>${ITEMS[l.key].name}</dd><dt>ロット</dt><dd>${l.id}</dd><dt>数量</dt><dd>${esc(l.qty)}</dd><dt>期限</dt><dd>${esc(l.exp)}</dd><dt>状態</dt><dd>${esc(l.status)}</dd>`
+   :l.kind==="weighed"?`<dt>品目</dt><dd>${ITEMS[l.key].name}</dd><dt>秤量済</dt><dd>${l.id}</dd><dt>秤量値</dt><dd>${esc(l.qty)}</dd><dt>指図</dt><dd>${esc(l.mo)}</dd>`
+   :`<dt>品目</dt><dd>${esc(l.name)}</dd><dt>ロット</dt><dd>${l.id}</dd><dt>数量</dt><dd>${esc(l.qty)}</dd><dt>状態</dt><dd>${esc(l.status)}</dd>`;
+  return `<div class="label"><div class="lh"><span>${kind}</span><span>${cnt||""}</span></div><div class="lb">${qr(l.id,76)}<dl class="kv">${rows}</dl></div></div>`;
+}
+
+/* ② 移動 */
+SCR.B1=()=>{const all=KEYS.every(k=>S.moved[k]);
+  return {title:"② 倉庫 → 秤量室",sub:"移動指示 MV-2611-014",back:"home",
+  body:`<div class="card"><dl class="kv"><dt>移動</dt><dd>原料倉庫 → 秤量室</dd><dt>対象</dt><dd>${MO}　${PRODUCT}</dd></dl></div>
+  ${all?"":`<div class="finder"><span>原料ラベルのQRを枠に合わせてください</span></div>`}
+  <div class="checklist">${KEYS.map(k=>{const id=S.moved[k];return `<div class="ck ${id?"on":""}"><span class="box">${id?"✓":""}</span><span><b>${ITEMS[k].name}</b><br><span class="s">${id?`${id}　照合OK`:`必要量 ${ITEMS[k].plan.toFixed(3)} kg 以上`}</span></span><span>${id?`<span class="chip ok">OK</span>`:`<span class="chip">未読取</span>`}</span></div>`}).join("")}</div>`,
+  actions:all?`<button class="btn pri" data-a="B_reg">移動実績を登録する</button>`:`<button class="btn scan" data-a="scan" data-c="B">原料ラベルを読み取る</button><p class="note">読取 ${Object.keys(S.moved).length} / 4</p>`};};
+SCR.B3=()=>({title:"② 倉庫 → 秤量室",sub:"完了",back:"home",
+  body:`<div class="issued"><span class="big">✓</span><b>移動実績を登録しました</b><span class="stamp">4品目　原料倉庫 → 秤量室</span></div>
+  <div class="checklist">${KEYS.map(k=>`<div class="ck on"><span class="box">✓</span><span><b>${ITEMS[k].name}</b><br><span class="s">${S.moved[k]}</span></span><span class="chip">秤量室</span></div>`).join("")}</div>
+  <p class="info">次は秤量室の秤量PCで、秤量前のロット照合と秤量を行います。</p>`,
+  actions:`<button class="btn sec" data-a="nav" data-s="home">ホームへ戻る</button><button class="btn pri" data-a="nav" data-s="W1">秤量PCの画面を見る</button>`});
+
+/* ③④ 秤量PC */
+SCR.W1=()=>{
+  const k=S.wSel;const all=KEYS.every(x=>S.weighed[x]);
+  const rows=KEYS.map(x=>{const w=S.weighed[x];const st=w?`<span class="chip ok">秤量済</span>`:S.wScan[x]?`<span class="chip gold">照合済</span>`:`<span class="chip">未</span>`;
+    const op=w?`${st}<br><span class="stamp">${w.wid}</span>`:x===k?`<span class="chip gold">秤量中</span>`:`<button class="wbtn" data-a="W_sel" data-k="${x}">秤量する</button>`;
+    return `<tr class="${x===k?"sel":""} ${!w&&x!==k?"pick":""}" ${!w&&x!==k?`data-a="W_sel" data-k="${x}"`:""}><td><b>${ITEMS[x].name}</b><br><span class="stamp">${ITEMS[x].code}</span></td><td>${op}</td><td class="num">${ITEMS[x].plan.toFixed(3)}</td><td class="num">${S.wScan[x]||"—"}</td><td class="num">${w?w.val:"—"}</td></tr>`}).join("");
+  let right="";
+  if(!k){right=`<div class="card"><h3>秤量する原料を選んでください</h3><p class="info" style="margin:0">一覧の原料の行（または「秤量する」ボタン）を押すと、③ 秤量前のロット照合 → ④ 秤量 の順に進みます。</p></div>
+    ${all?`<p class="alert ok">4品目すべての秤量済ラベルを発行しました。</p>`:`<button class="link" data-a="W_all">残りをまとめて実行（デモ短縮）</button>`}`;}
+  else{
+    const sc=!!S.wScan[k];const plan=ITEMS[k].plan;const tol=plan*0.005;const v=S.p.read;
+    const ok=v!=null&&Math.abs(v-plan)<=tol+1e-9;
+    right=`<div class="steps2"><span class="${sc?"dn":"on"}">③ ロット照合</span><span class="${sc?"on":""}">④ 秤量</span></div>
+    <div class="card"><dl class="kv"><dt>原料</dt><dd><b>${ITEMS[k].name}</b>（${ITEMS[k].code}）</dd><dt>指図量</dt><dd class="num">${plan.toFixed(3)} kg（許容 ±0.5%：${(plan-tol).toFixed(3)}〜${(plan+tol).toFixed(3)}）</dd><dt>移動済ロット</dt><dd>${S.moved[k]}</dd></dl></div>
+    ${!sc?`<p class="info">秤量の前に、容器の原料ラベルをQRスキャナで読み取ってください。</p>`:
+    `<div class="scale"><div class="sl"><span>秤 SC-02（ひょう量 30 kg）</span><span>${v!=null?(ok?"安定":"安定"):"待機"}</span></div><div class="sv">${v!=null?v.toFixed(3):"0.000"} <small style="font-size:18px">kg</small></div></div>
+    ${v!=null?(ok?`<p class="alert ok">許容範囲内です。秤量値は秤から取り込みました（手入力していません）。</p>`:`<p class="alert ng">許容範囲外です。</p>`):`<p class="info">秤の値が安定したら「秤から取り込む」を押してください。プロトタイプでは秤の値を模擬しています。秤との連携方式は、PoCで検証する予定です。</p>`}`}`;
+  }
+  let actions="";
+  if(!k)actions=all?`<button class="btn pri" data-a="nav" data-s="home">スマホのホームへ戻る</button>`:"";
+  else if(!S.wScan[k])actions=`<button class="btn sec" data-a="W_cancel">戻る</button><button class="btn scan" data-a="scan" data-c="W">スキャナで原料ラベルを読む</button>`;
+  else if(S.p.read==null)actions=`<button class="btn sec" data-a="W_cancel">戻る</button><button class="btn pri" data-a="W_read">秤から取り込む</button>`;
+  else actions=`<button class="btn sec" data-a="W_read">取り込み直す</button><button class="btn issue" data-a="W_reg">秤量実績を確定し、秤量済ラベルを発行</button>`;
+  return {pc:true,title:"③④ 秤量",sub:`製造指図 ${MO}　${PRODUCT}　バッチ ${BATCH}`,back:"home",
+    body:`<div class="pcgrid"><div style="min-width:0;display:flex;flex-direction:column;gap:10px"><div class="tblwrap"><table class="tbl"><thead><tr><th>原料</th><th>操作・状態</th><th>指図量 kg</th><th>原料ロット</th><th>秤量値 kg</th></tr></thead><tbody>${rows}</tbody></table></div>
+    ${KEYS.filter(x=>S.weighed[x]).length?`<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:8px">${KEYS.filter(x=>S.weighed[x]).map(x=>labelHTML("秤量済ラベル",S.lots[S.weighed[x].wid])).join("")}</div>`:""}</div>
+    <div style="min-width:0;display:flex;flex-direction:column;gap:10px">${right}</div></div>`,actions};
+};
+
+/* ⑤ 投入 */
+SCR.C1=()=>{const all=KEYS.every(k=>S.cScan[k]);
+  return {title:"⑤ 製剤室（投入）",sub:`製造指図 ${MO}`,back:"home",
+  body:`<div class="card"><dl class="kv"><dt>品目</dt><dd>${PRODUCT}</dd><dt>バッチ</dt><dd>${BATCH}</dd><dt>工程</dt><dd>混合 → 打錠</dd></dl></div>
+  ${all?"":`<div class="finder"><span>秤量済ラベルのQRを枠に合わせてください</span></div>`}
+  <div class="checklist">${KEYS.map(k=>{const id=S.cScan[k];return `<div class="ck ${id?"on":""}"><span class="box">${id?"✓":""}</span><span><b>${ITEMS[k].name}</b><br><span class="s">${id?`${id}　${S.weighed[k].val} kg　照合OK`:`秤量済 ${S.weighed[k].val} kg`}</span></span><span>${id?`<span class="chip ok">OK</span>`:`<span class="chip">未読取</span>`}</span></div>`}).join("")}</div>
+  ${all?"":`<p class="info">すべての秤量済ラベルを読むまで、投入を確定できません。</p>`}`,
+  actions:all?`<button class="btn pri" data-a="C_reg">投入を確定する</button>`:`<button class="btn scan" data-a="scan" data-c="C">秤量済ラベルを読み取る</button><p class="note">読取 ${Object.keys(S.cScan).length} / 4</p>`};};
+SCR.C3=()=>({title:"⑤ 製剤室（投入）",sub:"完了",back:"home",
+  body:`<div class="issued"><span class="big">✓</span><b>投入を確定しました</b><span class="stamp">作業開始 ${esc(S.rec.D.start)}（自動記録）</span></div>
+  <p class="info">混合・打錠が終わったら、⑥ 製剤室（完了）で主要製造記録を入力します。</p>`,
+  actions:`<button class="btn sec" data-a="nav" data-s="home">ホームへ戻る</button><button class="btn pri" data-a="nav" data-s="D1">⑥ 製剤室（完了）へ</button>`});
+
+/* ⑥ 製剤完了 */
+function specText(s){if(s.spec)return s.spec;if(s.min==null)return `規格 ${s.max}${s.unit} 以下`;return `規格 ${s.min}〜${s.max} ${s.unit}`}
+SCR.D1=()=>{
+  const fails=dFails();const memo=(S.f.d_memo||"").trim();
+  const secs=[...new Set(DSPEC.map(s=>s.sec))];
+  const q=Number(String(dVal("qty")).replace(/,/g,""));const yieldp=isNaN(q)?"—":(q/1000).toFixed(1);
+  const body=`<div class="card"><dl class="kv"><dt>バッチ</dt><dd>${BATCH}　${PRODUCT}</dd><dt>作業開始</dt><dd>${esc(S.rec.D.start)}（投入確定時に自動記録）</dd><dt>作業終了</dt><dd>確定した時刻を自動記録</dd></dl></div>
+  ${secs.map(sec=>`<div class="fsec"><h3>${sec}</h3>${DSPEC.filter(s=>s.sec===sec).map(s=>{const v=dVal(s.k);const bad=outOf(s,v);
+    return `<div class="fld ${bad?"bad":""}"><label for="d_${s.k}">${s.label}</label><span class="spec">${specText(s)}${bad?"　規格外":""}</span><span class="in"><input id="d_${s.k}" data-f="d_${s.k}" data-live="1" inputmode="decimal" value="${esc(v)}"><span class="u">${s.unit}</span></span></div>`}).join("")}
+    ${sec==="出来高"?`<div class="fld auto"><label>収率</label><span class="spec">自動計算</span><span class="in"><input value="${yieldp}" readonly tabindex="-1"><span class="u">%</span></span></div>`:""}</div>`).join("")}
+  <div class="fsec"><h3>コメント・逸脱メモ ${fails.length?`<span class="chip ng">入力が必要</span>`:`<span class="chip">任意</span>`}</h3>
+  <textarea id="d_memo" data-f="d_memo" data-live="1" placeholder="${fails.length?"規格外の内容、原因、とった処置を記入してください":"気づいたことがあれば記入してください"}">${esc(S.f.d_memo||"")}</textarea></div>`;
+  const blocked=fails.length&&!memo;
+  const top=fails.length?`<p class="alert ng">規格外の値が ${fails.length} 件あります（${fails.map(s=>s.label).join("、")}）。逸脱メモを入力すると確定できます。</p>`:"";
+  return {title:"⑥ 製剤室（完了）",sub:"主要製造記録",back:"home",body:top+body,
+    actions:`<button class="btn pri" data-a="D_reg" ${blocked?"disabled":""}>記録を確定する（作業者・確認者の署名）</button>${blocked?`<p class="note">逸脱メモを入力すると確定できます</p>`:""}`};
+};
+SCR.D3=()=>{const l=S.lots[BATCH];const done=l&&l.issued&&S.prog.D;
+  const pseudo=done?l:{id:BATCH,kind:"bulk",name:"サンプル錠 100mg 素錠",qty:n0(S.rec.D.vals.qty)+" 錠",status:"記録確定"};
+  return {title:"⑥ 製剤室（完了）",sub:done?"完了":"バルクラベル発行",back:done?"home":null,
+  body:`${done?`<div class="issued"><span class="big">✓</span><b>バルクラベルを発行しました</b><span class="stamp">${esc(l.issued.at)}　${esc(l.issued.by)}</span></div>`:`<p class="alert ok">主要製造記録を確定しました。実施：${esc(uname(S.rec.D.worker))}　確認：${esc(uname(S.rec.D.conf))}</p>`}
+  ${labelHTML("バルクラベル",pseudo,"容器 1 / 1")}
+  <p class="info">このラベルは包装室で読み取られます。</p>`,
+  actions:done?`<button class="btn sec" data-a="nav" data-s="home">ホームへ戻る</button><button class="btn pri" data-a="nav" data-s="recD">確定した記録を見る</button>`:`<button class="btn issue" data-a="D_issue">バルクラベルを発行する</button>`};};
+
+/* ⑦ 包装 */
+SCR.E1=()=>({title:"⑦ 包装室",sub:"包装指図 PK-2611-001",back:"home",
+  body:`<div class="card"><dl class="kv"><dt>品目</dt><dd>${PRODUCT}　PTP 100錠／箱</dd><dt>製品ロット</dt><dd>P2611-01（採番済）</dd><dt>投入バルク</dt><dd>${BATCH}</dd></dl></div>
+  <div class="finder"><span>バルクラベルのQRを枠に合わせてください</span></div>
+  <div class="checklist"><div class="ck"><span class="box"></span><span><b>${BATCH}　素錠</b><br><span class="s">バルクラベル（容器 1/1）</span></span><span class="chip">未読取</span></div></div>`,
+  actions:`<button class="btn scan" data-a="scan" data-c="E">バルクラベルを読み取る</button>`});
+SCR.E2=()=>{
+  const b=eBalance();const fails=eFails();const memo=(S.f.e_memo||"").trim();
+  const c1=!!S.f.e_c1,c2=!!S.f.e_c2;
+  const needMemo=b.diff!==0||fails.length>0;
+  const blocked=(needMemo&&!memo)||!c1||!c2;
+  const fld=s=>{const v=eVal(s.k);const bad=s.min!=null&&outOf(s,v);return `<div class="fld ${bad?"bad":""}"><label for="e_${s.k}">${s.label}</label><span class="spec">${s.spec||specText(s)}${bad?"　規格外":""}</span><span class="in"><input id="e_${s.k}" data-f="e_${s.k}" data-live="1" ${s.text?`class="l"`:`inputmode="decimal"`} value="${esc(v)}">${s.unit?`<span class="u">${s.unit}</span>`:""}</span></div>`};
+  return {title:"⑦ 包装室",sub:"出来高・主要製造記録",back:"home",
+  body:`<p class="alert ok">${BATCH} 素錠 ${n0(b.input)} 錠を照合しました。</p>
+  <div class="fsec"><h3>出来高と収支</h3>${ESPEC.slice(0,3).map(fld).join("")}
+    <div class="fld auto"><label>収支差</label><span class="spec">投入 ${n0(b.input)} −（出来高 ${n0(b.out)} ＋ 不良 ${n0(b.def)} ＋ サンプル ${n0(b.sam)}）</span><span class="in"><input value="${n0(b.diff)}" readonly tabindex="-1"><span class="u">錠</span></span></div>
+    ${b.diff!==0?`<p class="alert ng">収支が合いません（差 ${n0(b.diff)} 錠）。数え直すか、逸脱メモに理由を記入してください。</p>`:`<p class="alert ok">収支は一致しています。</p>`}</div>
+  <div class="fsec"><h3>包装条件</h3>${ESPEC.slice(3).map(fld).join("")}</div>
+  <div class="fsec"><h3>表示の確認</h3>
+    <label class="chk"><input type="checkbox" id="e_c1" data-f="e_c1" data-live="1" ${c1?"checked":""}><span>製造番号（P2611-01）と使用期限（2029-10）の印字を確認した</span></label>
+    <label class="chk"><input type="checkbox" id="e_c2" data-f="e_c2" data-live="1" ${c2?"checked":""}><span>添付文書の版（第3版）を確認した</span></label></div>
+  <div class="fsec"><h3>コメント・逸脱メモ ${needMemo?`<span class="chip ng">入力が必要</span>`:`<span class="chip">任意</span>`}</h3><textarea id="e_memo" data-f="e_memo" data-live="1">${esc(S.f.e_memo||"")}</textarea></div>`,
+  actions:`<button class="btn pri" data-a="E_reg" ${blocked?"disabled":""}>記録を確定する（作業者・確認者の署名）</button>${blocked?`<p class="note">${!c1||!c2?"表示の確認にチェックを入れてください":"逸脱メモを入力すると確定できます"}</p>`:""}`};
+};
+SCR.E3=()=>{const done=S.prog.E;const l=S.lots["P2611-01"]||{id:"P2611-01",kind:"product",name:PRODUCT,qty:n0(S.rec.E.vals.boxes)+" 箱",status:"出荷判定前"};
+  const cs=Math.ceil(S.rec.E.vals.boxes/10);
+  return {title:"⑦ 包装室",sub:done?"完了":"製品ラベル発行",back:done?"home":null,
+  body:`${done?`<div class="issued"><span class="big">✓</span><b>製品ラベルを ${cs} 枚発行しました</b><span class="stamp">${esc(l.issued.at)}　${esc(l.issued.by)}</span></div>`:`<p class="alert ok">包装の主要製造記録を確定しました。実施：${esc(uname(S.rec.E.worker))}　確認：${esc(uname(S.rec.E.conf))}</p>`}
+  ${labelHTML("製品ラベル（ケース）",l,`10箱入り ×${cs}`)}
+  <p class="info">製品は「出荷判定前」で入庫します。品質保証の出荷判定はこのプロトタイプの範囲外です。</p>`,
+  actions:done?`<button class="btn sec" data-a="nav" data-s="home">ホームへ戻る</button>`:`<button class="btn issue" data-a="E_issue">製品ラベルを発行する（${cs}枚）</button>`};};
+
+/* ⑧ 出荷 */
+SCR.F1=()=>({title:"⑧ 製品倉庫 → 出荷",sub:"出荷指示 SH-2611-007",back:"home",
+  body:`<div class="card"><dl class="kv"><dt>出荷先</dt><dd>架空卸 東日本センター</dd><dt>品目</dt><dd>${PRODUCT}</dd><dt>ロット指定</dt><dd>P2611-01</dd><dt>数量</dt><dd>${S.rec.E?n0(S.rec.E.vals.boxes):"980"} 箱</dd></dl></div>
+  <div class="finder"><span>製品ラベルのQRを枠に合わせてください</span></div>
+  <div class="checklist"><div class="ck ${S.fScan?"on":""}"><span class="box">${S.fScan?"✓":""}</span><span><b>P2611-01　${PRODUCT}</b><br><span class="s">製品ラベル（ケース）</span></span><span class="chip">${S.fScan?"OK":"未読取"}</span></div></div>
+  <p class="info">デモではケースラベルの読み取りを1回で代表しています。</p>`,
+  actions:S.fScan?`<button class="btn pri" data-a="F_reg">出荷を登録する</button>`:`<button class="btn scan" data-a="scan" data-c="F">製品ラベルを読み取る</button>`});
+SCR.F3=()=>({title:"⑧ 出荷",sub:"完了",back:"home",
+  body:`<div class="issued"><span class="big">✓</span><b>出荷を登録しました</b><span class="stamp">SH-2611-007　P2611-01　${esc(S.lots["P2611-01"].qty)}</span></div>
+  <p class="info">受入から出荷まで、発行したラベルはすべて次の工程で読み取られました。トレースで確かめられます。</p>`,
+  actions:`<button class="btn sec" data-a="nav" data-s="home">ホームへ戻る</button><button class="btn pri" data-a="nav" data-s="trace">ロットトレースを見る</button>`});
+
+/* トレース */
+function nodeHTML(id,label,rec){
+  const l=S.lots[id];
+  if(!l||!l.issued&&!(l.reads||[]).length)return `<div class="tnode none"><div class="th"><b>${esc(label)}</b><span class="chip">未</span></div><span class="stamp">まだ作られていません</span></div>`;
+  const r=l.reads[l.reads.length-1];
+  const inner=`<div class="th"><b>${esc(id)}</b><span class="chip ${l.kind==="product"?"navy":"gold"}">${esc(label)}</span></div>
+    <span>${esc(lotName(l))}　${esc(l.qty)}</span>
+    <span class="stamp"><span class="fm i" style="padding:0 5px">発行</span> ${l.issued?`${esc(l.issued.step)} ${esc(l.issued.at)} ${esc(l.issued.by)}`:"—"}</span>
+    <span class="stamp"><span class="fm r" style="padding:0 5px">読取</span> ${r?`${esc(r.step)} ${esc(r.at)} ${esc(r.by)}`+(l.reads.length>1?` ほか${l.reads.length-1}回`:""):"まだ読まれていません"}</span>
+    ${rec?`<span class="stamp" style="color:var(--navy2);text-decoration:underline">主要製造記録を見る ›</span>`:""}`;
+  return rec?`<button class="tnode" data-a="nav" data-s="${rec}">${inner}</button>`:`<div class="tnode">${inner}</div>`;
+}
+SCR.trace=()=>{
+  const raws=KEYS.map(k=>S.moved[k]||({A:"R-2610-0412",B:"R-2609-0188",C:"R-2610-0255",D:"R-2608-0102"})[k]);
+  const ws=KEYS.map(k=>S.weighed[k]?S.weighed[k].wid:null);
+  const link=t=>`<div class="tlink">${t}</div>`;
+  return {title:"ロットトレース",sub:"製品 P2611-01 から原料まで",back:"home",
+  body:`<div class="search"><input id="tr_q" value="P2611-01" aria-label="ロット番号"><button class="btn sec" style="width:auto;padding:8px 12px;font-size:13px">検索</button></div>
+  <div class="tree">
+    ${nodeHTML("P2611-01","製品",S.rec.E&&S.rec.E.conf?"recE":null)}
+    ${link("⑦ 包装でバルクラベルを読取")}
+    ${nodeHTML(BATCH,"バルク",S.rec.D&&S.rec.D.conf?"recD":null)}
+    ${link("⑤ 投入で秤量済ラベルを読取")}
+    <div class="tkids">${KEYS.map((k,i)=>`<div class="tpair">${ws[i]?nodeHTML(ws[i],"秤量済"):`<div class="tnode none"><div class="th"><b>${ITEMS[k].name}</b><span class="chip">未</span></div><span class="stamp">秤量前</span></div>`}${link("③ 秤量前に読取")}${nodeHTML(raws[i],"原料")}</div>`).join("")}</div>
+  </div>
+  <p class="info">金は「ラベル発行」、紺は「QR読取」。発行したラベルが次の工程で必ず読まれていることが、現品と記録が一致している証跡です。</p>`,actions:""};
+};
+
+/* 記録照会・修正 */
+function recScreen(which){
+  const R=S.rec[which];const spec=which==="D"?DSPEC:ESPEC.filter(s=>!s.text);
+  const title=which==="D"?`${BATCH} 製剤（混合・打錠）`:"P2611-01 包装";
+  return {title:"主要製造記録",sub:title,back:"trace",
+  body:`<div class="card"><dl class="kv"><dt>実施</dt><dd>${esc(uname(R.worker))}　${esc(R.wAt)}</dd><dt>確認</dt><dd>${R.reconf?`<span class="chip warn">修正後の再確認待ち</span>`:`${esc(uname(R.conf))}　${esc(R.cAt)}`}</dd><dt>作業時間</dt><dd>${esc(R.start)} 〜 ${esc(R.end||R.wAt)}</dd></dl></div>
+  ${R.reconf?`<p class="alert warn">確認後に修正されたため、確認者の再確認が必要です。</p>`:""}
+  <div class="fsec">${spec.map(s=>{const h=R.hist.filter(x=>x.k===s.k);return `<div class="rv"><span>${s.label}<br><span class="rs">${specText(s)}</span></span><span class="val num">${esc(R.vals[s.k])} ${s.unit||""}</span><button class="link" data-a="mod" data-w="${which}" data-k="${s.k}">修正</button>${h.map(x=>`<span class="hist">修正 ${esc(x.before)} → ${esc(x.after)}　${esc(x.at)} ${esc(x.by)}　理由：${esc(x.reason)}</span>`).join("")}</div>`}).join("")}</div>
+  ${R.memo?`<div class="card"><h3>コメント・逸脱メモ</h3><p style="margin:0">${esc(R.memo)}</p></div>`:""}`,
+  actions:R.reconf?`<button class="btn pri" data-a="reconf" data-w="${which}">確認者が再確認する</button>`:`<button class="btn sec" data-a="nav" data-s="audit">監査証跡を見る</button>`};
+}
+SCR.recD=()=>recScreen("D");SCR.recE=()=>recScreen("E");
+
+/* 監査証跡 */
+SCR.audit=()=>{
+  const q=S.auditQ.trim();const F=S.auditF;
+  const list=S.audit.filter(e=>{
+    if(F==="ng"&&e.res!=="NG")return false;
+    if(F==="mod"&&!e.before)return false;
+    if(F==="sign"&&!e.sign)return false;
+    if(F==="label"&&e.action!=="ラベル発行")return false;
+    if(q&&!(e.target+e.detail+e.user+e.action+e.term).includes(q))return false;return true;});
+  const chips=[["all","すべて"],["ng","照合NG"],["mod","修正"],["sign","署名"],["label","ラベル発行"]].map(([k,t])=>`<button class="${F===k?"on":""}" data-a="af" data-k="${k}">${t}</button>`).join("");
+  return {title:"監査証跡",sub:`${S.audit.length} 件（DB側で生成）`,back:"home",
+  body:`<div class="search"><input id="au_q" data-f="auditQ" value="${esc(S.auditQ)}" placeholder="ロット・品目・作業者・操作で検索"><button class="btn sec" style="width:auto;padding:8px 12px;font-size:13px" data-a="aq">検索</button></div>
+  <div class="chips">${chips}</div>
+  <p class="eyebrow">${list.length} 件を表示（新しい順）</p>
+  <div class="list">${list.map(e=>`<button class="ev ${e.res==="NG"?"ngv":e.before?"mod":""}" data-a="aopen" data-k="${e.id}">
+    <span class="e1"><span class="num">${esc(e.at)}</span><span>${esc(e.user)}／${esc(e.term)}</span></span>
+    <span class="e2">${esc(e.action)} ${e.res==="NG"?`<span class="chip ng">NG</span>`:""}${e.sign?`<span class="chip">署名：${esc(e.sign)}</span>`:""}</span>
+    <span class="e3">${esc(e.target)}</span>
+    ${S.auditOpen===e.id?`<span class="ex"><span class="stamp">内容</span><br>${esc(e.detail)}${e.before!=null?`<br><span class="stamp">修正前</span> ${esc(e.before)}　<span class="stamp">修正後</span> ${esc(e.after)}<br><span class="stamp">${e.photo?"差し替え理由":"修正理由"}</span> ${esc(e.reason)}`:""}${e.photo&&S.photos.find(p=>p.id===e.photo)?`<br><img src="${S.photos.find(p=>p.id===e.photo).data}" alt="写真 ${e.photo}" style="width:96px;height:96px;object-fit:cover;border-radius:6px;margin-top:6px">`:""}</span>`:""}
+  </button>`).join("")||`<p class="info">該当する記録はありません。</p>`}</div>`,actions:""};
+};
+
+/* ===== オーバーレイ ===== */
+function sheetHTML(){
+  const ctx=S.sheet.ctx;const cs=candidates(ctx);
+  return `<div class="ovl" data-a="closeSheet"><div class="sheet" data-stop="1" role="dialog" aria-label="ラベルを読み取る">
+    <div class="sh"><b>読み取るラベルを選ぶ</b><p>プロトタイプ用の操作です。実機では${ctx==="W"?"QRスキャナ":"カメラ"}でラベルを読み取ります。</p></div>
+    <div class="sb">${cs.map(c=>{
+      if(c.id==="HAND")return `<button class="cand ${c.hint==="err"&&S.gtry?"":""}" data-a="pick" data-id="HAND"><span style="width:36px;height:36px;border:2px dashed var(--mute);border-radius:4px;display:grid;place-items:center;font-size:10px;color:var(--mute)">手書き</span><span><span class="c1">手書きラベル</span><br><span class="c2">主薬A 10kg と手書き</span></span><span class="chip warn">エラー例</span></button>`;
+      const l=S.lots[c.id];const u=used(ctx,c.id);
+      const tag=l.kind==="raw"?(l.status==="判定前"?"判定前":l.exp<"2026-11-10"?"期限 "+l.exp:"合格"):l.status;
+      return `<button class="cand ${u?"used":""}" data-a="pick" data-id="${c.id}">${qr(c.id,36)}<span><span class="c1">${c.id}</span><br><span class="c2">${esc(lotName(l))}　${esc(l.qty)}${l.mo&&l.kind!=="raw"?"　"+l.mo:""}</span></span><span>${u?`<span class="chip">読取済</span>`:c.hint==="err"?`<span class="chip warn">エラー例</span>`:`<span class="chip">${esc(tag)}</span>`}</span></button>`;}).join("")}</div>
+    <div class="sf"><button class="btn sec" data-a="closeSheet">閉じる</button></div></div></div>`;
+}
+function errHTML(){
+  const e=S.err;const d=ERR[e.type];const l=e.id==="HAND"?null:S.lots[e.id];
+  const read=l?`${l.id}<br>${esc(lotName(l))}${l.kind==="raw"?`<br>状態 ${esc(l.status)}／期限 ${esc(l.exp)}`:(l.mo?`<br>${esc(l.mo)}`:"")+`<br>${esc(l.status||"")}`}`:"手書きラベル（QRなし／未登録）";
+  return `<div class="errscr" role="alertdialog" aria-label="${d.t}"><div class="eh"><span>照合エラー</span><b>${d.t}</b><span>${d.s}</span></div>
+  <div class="eb"><div class="cmp"><div class="rd"><span class="t">読み取ったラベル</span><br>${read}</div><div class="xp"><span class="t">求められているもの</span><br>${esc(e.expect||"—")}</div></div>
+  <p class="alert warn">${d.fix}</p>
+  <p class="info">このエラーも監査証跡に記録されました（照合NG）。この状態では先へ進めません。</p></div>
+  <div class="actions">${e.type==="shipPending"?`<button class="btn sec" data-a="release">出荷判定を済ませる（デモ操作）</button>`:""}<button class="btn scan" data-a="rescan">読み直す</button></div></div>`;
+}
+function modalHTML(){
+  const m=S.modal;
+  if(m.type==="sign"){
+    const p1=m.phase===1;
+    return `<div class="ovl"><div class="sheet" data-stop="1" role="dialog" aria-label="電子署名">
+      <div class="sh"><b>電子署名（${p1?"実施":"確認"}）</b><p>${p1?"記録を確定します。パスワードを入力して署名してください。":"確認者に端末を渡してください。確認者のIDとパスワードで署名します。"}</p></div>
+      <div class="sb"><div class="mean"><span class="stamp">署名の意味</span><br><b>${esc(m.title)}</b>を${p1?"実施しました":"確認しました"}</div>
+      ${p1?`<div class="mfield"><span>署名者</span><b>${esc(uname(S.user))}（${S.user}）</b></div>`:
+      `<div class="mfield"><label for="sg_id">確認者</label><select id="sg_id" data-f="sg_id"><option value="">選択してください</option>${Object.keys(USERS).map(id=>`<option value="${id}" ${S.f.sg_id===id?"selected":""}>${USERS[id].name}（${id}）</option>`).join("")}</select></div>`}
+      <div class="mfield"><label for="sg_pw">パスワード</label><input id="sg_pw" type="password" value="demo"></div>
+      <p class="stamp" style="margin:0">デモ用にパスワードは入力済みです。</p>
+      ${m.err?`<p class="alert ng">${esc(m.err)}</p>`:""}</div>
+      <div class="sf"><button class="btn sec" data-a="signCancel">キャンセル</button><button class="btn pri" data-a="signOk">署名する</button></div></div></div>`;
+  }
+  if(m.type==="phrep"){
+    const p=S.photos.find(x=>x.id===m.id);const rs=S.f.pr_rs||"";const rd=(S.f.pr_rd||"").trim();const ok=rs&&rd;
+    return `<div class="ovl"><div class="sheet" data-stop="1" role="dialog" aria-label="写真の差し替え">
+      <div class="sh"><b>写真の差し替え：${p.id}（${esc(p.kind)}）</b><p>元の写真は削除されず、差し替え済として残ります。差し替えの理由は必須です。</p></div>
+      <div class="sb"><div class="viewer"><img src="${p.data}" alt="差し替える写真 ${p.id}" style="max-height:160px;object-fit:contain"></div>
+      <div class="mfield"><label for="pr_rs">差し替えの理由（必須）</label><select id="pr_rs" data-f="pr_rs" data-live="1"><option value="">選択してください</option>${["ピンぼけ・ぶれ","写す対象の誤り","写り込み（個人情報など）","その他"].map(x=>`<option ${rs===x?"selected":""}>${x}</option>`).join("")}</select></div>
+      <div class="mfield"><label for="pr_rd">理由の詳細（必須）</label><textarea id="pr_rd" data-f="pr_rd" data-live="1" placeholder="例：ロット表示が読めないため撮り直し">${esc(S.f.pr_rd||"")}</textarea></div>
+      ${ok?"":`<p class="alert warn">理由と詳細を入力すると、撮影に進めます。</p>`}</div>
+      <div class="sf"><button class="btn sec" data-a="modCancel">キャンセル</button><button class="btn pri" data-a="phRepOk" ${ok?"":"disabled"}>${CAM}撮影に進む</button></div></div></div>`;
+  }
+  if(m.type==="mod"){
+    const R=S.rec[m.w];const spec=(m.w==="D"?DSPEC:ESPEC).find(s=>s.k===m.k);
+    const nv=S.f.m_val!=null?S.f.m_val:R.vals[m.k];const rs=S.f.m_rs||"";const rd=(S.f.m_rd||"").trim();
+    const ok=rs&&rd&&String(nv)!==String(R.vals[m.k]);
+    return `<div class="ovl"><div class="sheet" data-stop="1" role="dialog" aria-label="記録の修正">
+      <div class="sh"><b>記録の修正：${spec.label}</b><p>修正前の値は消えずに残ります。修正理由は必須です。</p></div>
+      <div class="sb"><div class="cmp"><div class="xp"><span class="t">修正前</span><br><b>${esc(R.vals[m.k])} ${spec.unit||""}</b></div><div class="xp" style="background:var(--cream)"><span class="t">修正後</span><br><input id="m_val" data-f="m_val" data-live="1" value="${esc(nv)}" style="width:100%;border:1px solid var(--line);border-radius:6px;padding:4px 6px"></div></div>
+      <div class="mfield"><label for="m_rs">修正理由（必須）</label><select id="m_rs" data-f="m_rs" data-live="1"><option value="">選択してください</option>${["入力誤り","測定のやり直し","記録漏れの追記","その他"].map(x=>`<option ${rs===x?"selected":""}>${x}</option>`).join("")}</select></div>
+      <div class="mfield"><label for="m_rd">理由の詳細（必須）</label><textarea id="m_rd" data-f="m_rd" data-live="1" placeholder="例：温湿度計の表示 22.5 を 25.2 と読み違えたため">${esc(S.f.m_rd||"")}</textarea></div>
+      ${!ok?`<p class="alert warn">${String(nv)===String(R.vals[m.k])?"修正後の値を入力してください。":"修正理由と詳細を入力すると確定できます。"}</p>`:""}</div>
+      <div class="sf"><button class="btn sec" data-a="modCancel">キャンセル</button><button class="btn pri" data-a="modOk" ${ok?"":"disabled"}>修正を確定する</button></div></div></div>`;
+  }
+}
+
+function viewerHTML(){
+  const p=S.photos.find(x=>x.id===S.view);if(!p)return "";
+  return `<div class="ovl" data-a="phClose"><div class="sheet" data-stop="1" role="dialog" aria-label="写真 ${p.id}">
+    <div class="sh"><b>${p.id}　${esc(p.kind)}</b><p>受入 PO-2611-0021${p.lot?`／ロット ${p.lot}`:"（受入登録前）"}</p></div>
+    <div class="sb"><div class="viewer"><img src="${p.data}" alt="${esc(p.kind)}の写真 ${p.id}"></div>
+    <dl class="kv"><dt>撮影</dt><dd>${esc(p.at)}　${esc(p.by)}</dd><dt>端末</dt><dd>${esc(p.term)}</dd>${p.replaced?`<dt>状態</dt><dd>差し替え済 → ${p.replaced.by}<br>理由：${esc(p.replaced.reason)}</dd>`:""}</dl></div>
+    <div class="sf"><button class="btn sec" data-a="phClose">閉じる</button></div></div></div>`;
+}
+
+/* ===== ガイド描画 ===== */
+function guideHTML(){
+  const cur=guideCur();
+  return `<aside class="guide" data-stop="1" aria-label="デモの筋書き"><h2>デモの筋書き</h2><p class="gsub">受入から出荷まで、現品と記録が作業と同時に一致することを見せます。各工程から始めることもできます。</p>
+  <ol class="gsteps">${GUIDE.map(g=>{const d=guideDone(g.id);const c=g.id===cur;
+    return `<li class="gstep ${d?"done":""} ${c?"cur":""}"><button data-a="gjump" data-k="${g.id}"><span class="gdot">${d?"✓":""}</span><span class="gl">${g.label}</span><span class="gjump">${c?"いまここ":"ここから始める"}</span></button>
+    ${c?`<div class="gdetail"><p>${g.point}</p>${g.tryit?`<p class="gtry"><b>試してみる：</b>${g.tryit}</p>`:""}</div>`:""}</li>`}).join("")}</ol>
+  <div class="gfoot"><button data-a="reset">最初からやり直す</button>${S.gopen?`<button data-a="gclose">閉じる</button>`:""}</div></aside>`;
+}
+
+/* ===== 描画 ===== */
+const app=document.getElementById("app");
+let lastScreen=null;
+/* 入力中のフォーカスとスクロールを保ったまま画面を更新する */
+function morph(from,to){
+  if(from.nodeType!==to.nodeType||from.nodeName!==to.nodeName){from.replaceWith(to.cloneNode(true));return}
+  if(from.nodeType===3||from.nodeType===8){if(from.nodeValue!==to.nodeValue)from.nodeValue=to.nodeValue;return}
+  if(from.nodeType!==1)return;
+  for(const a of [...from.attributes])if(!to.hasAttribute(a.name))from.removeAttribute(a.name);
+  for(const a of [...to.attributes])if(from.getAttribute(a.name)!==a.value)from.setAttribute(a.name,a.value);
+  const tag=from.tagName;
+  if(tag==="INPUT"){
+    if(from.type==="checkbox")from.checked=to.hasAttribute("checked");
+    else if(from!==document.activeElement){const v=to.getAttribute("value")||"";if(from.value!==v)from.value=v}
+    return;
+  }
+  if(tag==="TEXTAREA"){if(from!==document.activeElement&&from.value!==to.textContent)from.value=to.textContent;return}
+  const fc=[...from.childNodes],tc=[...to.childNodes];
+  for(let i=0;i<tc.length;i++){if(i<fc.length)morph(fc[i],tc[i]);else from.appendChild(tc[i].cloneNode(true))}
+  for(let i=fc.length-1;i>=tc.length;i--)from.removeChild(fc[i]);
+  if(tag==="SELECT"){const so=to.querySelector("option[selected]");from.value=so?(so.getAttribute("value")!=null?so.getAttribute("value"):so.textContent):(from.options[0]?from.options[0].value:"")}
+}
+function render(){
+  const v=SCR[S.screen]();
+  const g=guideHTML();
+  const html=`<div class="stage">${g}<div class="devwrap"><div class="dev ${v.pc?"pc":""}">
+    <div class="proto"><b>プロトタイプ</b><span>操作確認用・架空データ</span><button class="gbtn" data-a="gopen">ガイド</button></div>
+    <div class="hdr">${v.back?`<button class="back" data-a="nav" data-s="${v.back}" aria-label="戻る">‹</button>`:`<span style="width:6px"></span>`}<div class="ttl"><b>${v.title}</b><span>${v.sub||""}</span></div><div class="who">${hdrWho()}</div></div>
+    <div class="content">${v.body}</div>
+    ${v.actions?`<div class="actions">${v.actions}</div>`:""}
+    ${S.sheet?sheetHTML():""}${S.err?errHTML():""}${S.modal?modalHTML():""}${S.view?viewerHTML():""}
+    ${S.toast?`<div class="toast ok" role="status">${esc(S.toast)}</div>`:""}
+    ${S.gopen?`<div class="gsheet" data-a="gclose">${g}</div>`:""}
+  </div></div></div>`;
+  if(!app.firstElementChild){app.innerHTML=html}
+  else{const tpl=document.createElement("template");tpl.innerHTML=html;morph(app.firstElementChild,tpl.content.firstElementChild)}
+  if(lastScreen!==S.screen){const nc=app.querySelector(".content");if(nc)nc.scrollTop=0}
+  lastScreen=S.screen;
+}
+let toastT;
+function toast(t){S.toast=t;clearTimeout(toastT);toastT=setTimeout(()=>{S.toast=null;render()},2200)}
+
+/* 署名 → 処理 */
+function sign(title,need2,done){S.modal={type:"sign",title,need2,phase:1,done};S.f.sg_id=""}
+
+/* ===== 操作 ===== */
+const A={
+  login(){S.user="sato01";log("ログイン","sato01","JIPROS共通ユーザーで認証");tick(2);go("home")},
+  nav(d){go(d.s)},
+  tile(d){const order=["A","B","W","C","D","E","F"];const i=order.indexOf(d.k);
+    if(S.prog[d.k]){toast("この工程は完了しています");return}
+    if(i>0&&!S.prog[order[i-1]]){toast("前の工程が完了していません");return}
+    go(d.s)},
+  A_reg(){sign("受入登録",false,()=>{core.receive();go("A3")})},
+  A_issue(){core.issueRaw();toast("原料ラベルを発行しました")},
+  scan(d){S.sheet={ctx:d.c}},
+  closeSheet(){S.sheet=null},
+  pick(d){
+    const ctx=S.sheet.ctx;const id=d.id;S.sheet=null;
+    const r=judge(ctx,id);
+    if(!r.ok){
+      const l=S.lots[id];
+      log("QR照合 NG",id==="HAND"?"手書きラベル":`${id} ${lotName(l)}`,`${ERR[r.type].t}：${ERR[r.type].s}`,{res:"NG"});tick(1);
+      S.err={type:r.type,id,expect:r.expect||({B:"移動指示 MV-2611-014 の原料（合格・期限内）",C:`製造指図 ${MO} の秤量済ラベル`,E:`${BATCH} サンプル錠 100mg 素錠`,F:"P2611-01（出荷判定 合格）",W:""})[ctx],ctx};return;
+    }
+    if(ctx==="B"){core.scanMove(id);toast(`照合OK　${lotName(S.lots[id])}　${id}`)}
+    if(ctx==="W"){core.scanW(S.wSel,id);toast(`照合OK　秤量に進めます`)}
+    if(ctx==="C"){core.scanC(id);toast(`照合OK　${lotName(S.lots[id])}`)}
+    if(ctx==="E"){core.scanE();go("E2")}
+    if(ctx==="F"){core.scanF();toast("照合OK　出荷指示と一致")}
+  },
+  rescan(){const c=S.err.ctx;S.err=null;S.sheet={ctx:c}},
+  release(){core.release();const c=S.err.ctx;S.err=null;toast("出荷判定を「合格」にしました（デモ操作）");S.sheet={ctx:c}},
+  B_reg(){sign("移動実績の登録",false,()=>{core.move();go("B3")})},
+  W_sel(d){S.wSel=d.k;S.p={}},
+  W_cancel(){S.wSel=null;S.p={}},
+  W_read(){const k=S.wSel;const off=[0.002,-0.006,0.001,0.000][KEYS.indexOf(k)];S.p={read:ITEMS[k].plan+off}},
+  W_reg(){const k=S.wSel;sign(`${ITEMS[k].name}の秤量`,false,()=>{core.weigh(k);toast(`秤量済ラベル ${S.weighed[k].wid} を発行しました`);S.wSel=null;S.p={}})},
+  W_all(){KEYS.filter(k=>!S.weighed[k]).forEach(k=>{S.wSel=k;if(!S.wScan[k])core.scanW(k,S.moved[k]);core.weigh(k)});S.wSel=null;S.p={};toast("残りの秤量を実行しました（デモ短縮）")},
+  C_reg(){sign("秤量済原料の投入",false,()=>{core.charge();go("C3")})},
+  D_reg(){sign("製剤記録（混合・打錠）",true,(c)=>{core.recD(c);go("D3")})},
+  D_issue(){core.issueBulk();toast("バルクラベルを発行しました")},
+  E_reg(){sign("包装記録",true,(c)=>{core.recE(c);go("E3")})},
+  E_issue(){core.issueProduct();toast("製品ラベルを発行しました")},
+  F_reg(){sign("出荷登録",false,()=>{core.ship();go("F3")})},
+  signCancel(){S.modal=null},
+  signOk(){
+    const m=S.modal;const pw=(document.getElementById("sg_pw")||{}).value;
+    if(!pw){m.err="パスワードを入力してください。";return}
+    if(m.phase===1){
+      if(m.need2){m.phase=2;m.err="";S.f.sg_id="";return}
+      S.modal=null;m.done();return;
+    }
+    const id=S.f.sg_id;
+    if(!id){m.err="確認者を選んでください。";return}
+    if(id===S.user){m.err="作業者と同じ人は確認者として署名できません。別の人が確認してください。";log("電子署名 NG",m.title,"作業者と確認者が同一",{res:"NG"});return}
+    S.modal=null;m.done(id);
+  },
+  mod(d){S.modal={type:"mod",w:d.w,k:d.k};S.f.m_val=null;S.f.m_rs="";S.f.m_rd=""},
+  modCancel(){S.modal=null},
+  phKind(d){S.f.ph_kind=d.k},
+  phRep(d){S.modal={type:"phrep",id:d.k};S.f.pr_rs="";S.f.pr_rd=""},
+  phRepOk(){S.phPending={replaces:S.modal.id,reason:`${S.f.pr_rs}：${(S.f.pr_rd||"").trim()}`};S.modal=null;const i=document.getElementById("ph_in");if(i)i.click()},
+  phPendCancel(){S.phPending=null},
+  phView(d){S.view=d.k},
+  phClose(){S.view=null},
+  modOk(){
+    const m=S.modal;const R=S.rec[m.w];const spec=(m.w==="D"?DSPEC:ESPEC).find(s=>s.k===m.k);
+    const before=R.vals[m.k],after=S.f.m_val;const reason=`${S.f.m_rs}：${S.f.m_rd.trim()}`;
+    S.modal=null;
+    sign(`記録の修正（${spec.label}）`,false,()=>{
+      tick(3);R.vals[m.k]=after;R.hist.push({k:m.k,before,after,at:tm(S.clock),by:uname(S.user),reason});R.reconf=true;
+      log("記録の修正",(m.w==="D"?`${BATCH} 製剤記録`:"P2611-01 包装記録")+"："+spec.label,"確認後の修正（再確認待ち）",{before:before+(spec.unit||""),after:after+(spec.unit||""),reason,sign:"実施"});
+      toast("修正しました。確認者の再確認が必要です");
+    });
+  },
+  reconf(d){const R=S.rec[d.w];sign("修正後の記録",true,(c)=>{tick(4);R.reconf=false;R.conf=c;R.cAt=tm(S.clock);log("電子署名（再確認）",d.w==="D"?`${BATCH} 製剤記録`:"P2611-01 包装記録","修正後の記録を確認",{sign:"確認",user:uname(c)});toast("再確認が完了しました")});S.modal.phase=1},
+  af(d){S.auditF=d.k;S.auditOpen=null},
+  aq(){},
+  aopen(d){const k=Number(d.k);S.auditOpen=S.auditOpen===k?null:k},
+  gjump(d){
+    const g=GUIDE.find(x=>x.id===d.k);
+    if(guideCur()===d.k){S.gopen=false;return}
+    // 前工程が終わっていればそのまま移動、そうでなければ自動で前工程を済ませて開始
+    const order=["A","B","W","C","D","E","F"];
+    if(d.k==="login"){jumpTo("login");return}
+    const reqIdx=order.indexOf(d.k);
+    const ready=reqIdx>=0?order.slice(0,reqIdx).every(k=>S.prog[k])&&!S.prog[d.k]&&S.user:S.prog.F;
+    if(ready){go(g.go);S.gopen=false;return}
+    jumpTo(d.k);toast(d.k==="A"?"ログイン済みの状態から始めます":"前の工程を済ませた状態から始めます");
+  },
+  gopen(){S.gopen=true},
+  gclose(){S.gopen=false},
+  reset(){jumpTo("login")}
+};
+
+app.addEventListener("click",e=>{
+  const t=e.target.closest("[data-a]");if(!t)return;
+  if((t.classList.contains("ovl")||t.classList.contains("gsheet"))&&e.target!==t)return;
+  if(t.disabled)return;
+  const f=A[t.dataset.a];if(!f)return;
+  f(Object.assign({},t.dataset));render();
+});
+app.addEventListener("input",e=>{
+  const t=e.target;if(!t.dataset||!t.dataset.f)return;
+  if(t.dataset.f==="auditQ"){S.auditQ=t.value;return}
+  S.f[t.dataset.f]=t.type==="checkbox"?t.checked:t.value;
+  if(t.dataset.live)render();
+});
+/* カメラ入力は画面の書き換えの外に1つだけ置く（撮影中に画面が変わっても受け取れるように） */
+const phIn=document.createElement("input");
+phIn.type="file";phIn.id="ph_in";phIn.className="vh";phIn.accept="image/*";phIn.setAttribute("capture","environment");phIn.tabIndex=-1;
+document.body.appendChild(phIn);
+phIn.addEventListener("change",()=>{
+  const f=phIn.files&&phIn.files[0];if(!f)return;
+  readPhoto(f,data=>{phIn.value="";addPhoto(data);render()});
+});
+app.addEventListener("keydown",e=>{if(e.key==="Enter"&&e.target.id==="au_q"){S.auditQ=e.target.value;render()}});
+
+render();
+})();
+</script>
+</body>
+</html>
